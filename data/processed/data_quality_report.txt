@@ -1,0 +1,13 @@
+DATA QUALITY REPORT
+==================================================
+
+OK: All expected important columns are present.
+WARNING: Column 'namc_code' has 5 duplicate value(s).
+WARNING: Column 'namc_term' has 4 empty value(s).
+WARNING: Column 'namc_term_diacritical' has 409 empty value(s).
+WARNING: Column 'name_english_under_index' has 2866 empty value(s).
+WARNING: Column 'namc_term_normalized' has 14 duplicate normalized value(s) (may be legitimate synonyms/sub-entries).
+WARNING: Column 'namc_term_diacritical_normalized' has 12 duplicate normalized value(s) (may be legitimate synonyms/sub-entries).
+WARNING: Column 'namc_term_devanagari_normalized' has 14 duplicate normalized value(s) (may be legitimate synonyms/sub-entries).
+WARNING: Column 'name_english_normalized' has 24 duplicate normalized value(s) (may be legitimate synonyms/sub-entries).
+WARNING: Column 'name_english_under_index_normalized' has 1 duplicate normalized value(s) (may be legitimate synonyms/sub-entries).

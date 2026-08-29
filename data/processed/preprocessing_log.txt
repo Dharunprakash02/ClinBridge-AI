@@ -1,0 +1,130 @@
+08:11:35 | INFO    | Loading dataset...
+08:11:35 | INFO    | Inspecting workbook...
+08:11:35 | INFO    | ======================================================================
+08:11:35 | INFO    | DATASET INSPECTION REPORT
+08:11:35 | INFO    | ======================================================================
+08:11:35 | INFO    | File name        : NATIONAL_AYURVEDA_MORBIDITY_CODES.xls
+08:11:35 | INFO    | All sheets found : ['NATIONAL-AYURVEDA-MORBIDITY-COD']
+08:11:35 | INFO    | Sheet selected   : NATIONAL-AYURVEDA-MORBIDITY-COD
+08:11:35 | INFO    | Header row used  : 0 (0-indexed)
+08:11:35 | INFO    | Number of rows   : 2910
+08:11:35 | INFO    | Number of columns: 12
+08:11:35 | INFO    | Column names     : ['Sr No.', 'NAMC_ID', 'NAMC_CODE', 'NAMC_term', 'NAMC_term_diacritical', 'NAMC_term_DEVANAGARI', 'Short_definition', 'Long_definition', 'Ontology_branches', 'Name English', 'Name English Under Index', 'Primary Index Related']
+08:11:35 | INFO    | ----------------------------------------------------------------------
+08:11:35 | INFO    | Data types per column:
+08:11:35 | INFO    |   Sr No.                              : int64
+08:11:35 | INFO    |   NAMC_ID                             : int64
+08:11:35 | INFO    |   NAMC_CODE                           : str
+08:11:35 | INFO    |   NAMC_term                           : str
+08:11:35 | INFO    |   NAMC_term_diacritical               : str
+08:11:35 | INFO    |   NAMC_term_DEVANAGARI                : str
+08:11:35 | INFO    |   Short_definition                    : str
+08:11:35 | INFO    |   Long_definition                     : str
+08:11:35 | INFO    |   Ontology_branches                   : str
+08:11:35 | INFO    |   Name English                        : str
+08:11:35 | INFO    |   Name English Under Index            : str
+08:11:35 | INFO    |   Primary Index Related               : str
+08:11:35 | INFO    | ----------------------------------------------------------------------
+08:11:35 | INFO    | Missing values per column:
+08:11:35 | INFO    |   Sr No.                              : 0 (0.0%)
+08:11:35 | INFO    |   NAMC_ID                             : 0 (0.0%)
+08:11:35 | INFO    |   NAMC_CODE                           : 1 (0.0%)
+08:11:35 | INFO    |   NAMC_term                           : 0 (0.0%)
+08:11:35 | INFO    |   NAMC_term_diacritical               : 409 (14.1%)
+08:11:35 | INFO    |   NAMC_term_DEVANAGARI                : 0 (0.0%)
+08:11:35 | INFO    |   Short_definition                    : 0 (0.0%)
+08:11:35 | INFO    |   Long_definition                     : 0 (0.0%)
+08:11:35 | INFO    |   Ontology_branches                   : 0 (0.0%)
+08:11:35 | INFO    |   Name English                        : 0 (0.0%)
+08:11:35 | INFO    |   Name English Under Index            : 0 (0.0%)
+08:11:35 | INFO    |   Primary Index Related               : 0 (0.0%)
+08:11:35 | INFO    | ----------------------------------------------------------------------
+08:11:35 | INFO    | Fully duplicated rows: 0
+08:11:35 | INFO    | ----------------------------------------------------------------------
+08:11:35 | INFO    | Sample records (first 3 rows):
+08:11:35 | INFO    | 
+   Sr No.  NAMC_ID  ... Name English Under Index Primary Index Related
+0       1        1  ...                        -                     -
+1       2        2  ...                        -                     -
+2       3        3  ...                        -                     -
+
+[3 rows x 12 columns]
+08:11:35 | INFO    | ======================================================================
+08:11:35 | INFO    | Cleaning column names...
+08:11:35 | INFO    | Column name mapping (original -> cleaned):
+08:11:35 | INFO    |   'Sr No.' -> 'sr_no'
+08:11:35 | INFO    |   'NAMC_ID' -> 'namc_id'
+08:11:35 | INFO    |   'NAMC_CODE' -> 'namc_code'
+08:11:35 | INFO    |   'NAMC_term' -> 'namc_term'
+08:11:35 | INFO    |   'NAMC_term_diacritical' -> 'namc_term_diacritical'
+08:11:35 | INFO    |   'NAMC_term_DEVANAGARI' -> 'namc_term_devanagari'
+08:11:35 | INFO    |   'Short_definition' -> 'short_definition'
+08:11:35 | INFO    |   'Long_definition' -> 'long_definition'
+08:11:35 | INFO    |   'Ontology_branches' -> 'ontology_branches'
+08:11:35 | INFO    |   'Name English' -> 'name_english'
+08:11:35 | INFO    |   'Name English Under Index' -> 'name_english_under_index'
+08:11:35 | INFO    |   'Primary Index Related' -> 'primary_index_related'
+08:11:35 | INFO    | Standardizing missing-value placeholders...
+08:11:35 | INFO    | Removing empty rows/columns...
+08:11:35 | INFO    | Removed 0 fully empty row(s) and 1 fully empty column(s).
+08:11:35 | INFO    | Detected column roles: {
+  "id_columns": [
+    "namc_id"
+  ],
+  "code_columns": [
+    "namc_code"
+  ],
+  "term_columns": [
+    "namc_term",
+    "namc_term_diacritical",
+    "namc_term_devanagari",
+    "name_english",
+    "name_english_under_index"
+  ],
+  "description_columns": [
+    "long_definition"
+  ],
+  "category_columns": [
+    "ontology_branches",
+    "primary_index_related"
+  ],
+  "other_columns": [
+    "sr_no"
+  ]
+}
+08:11:35 | INFO    | Cleaning code column(s)...
+08:11:35 | INFO    | Code column 'namc_code': 1 missing, 18 duplicate value(s) after cleaning.
+08:11:35 | INFO    | Checking duplicate records...
+08:11:35 | INFO    | Duplicates before cleaning: 2910
+08:11:35 | INFO    | Duplicates removed: 13
+08:11:35 | INFO    | Rows remaining: 2897
+08:11:35 | WARNING | Found 10 rows sharing a duplicate value in code column 'namc_code' after row-level de-duplication (kept, flagged for review).
+08:11:35 | INFO    | Normalizing terminology (text columns)...
+08:11:35 | INFO    | Created normalized column: namc_term_normalized
+08:11:35 | INFO    | Created normalized column: namc_term_diacritical_normalized
+08:11:35 | INFO    | Created normalized column: namc_term_devanagari_normalized
+08:11:35 | INFO    | Created normalized column: name_english_normalized
+08:11:35 | INFO    | Created normalized column: name_english_under_index_normalized
+08:11:35 | INFO    | Created normalized column: long_definition_normalized
+08:11:35 | INFO    | Created normalized column: ontology_branches_normalized
+08:11:35 | INFO    | Created normalized column: primary_index_related_normalized
+08:11:35 | INFO    | Creating search_text...
+08:11:35 | INFO    | search_text built from columns: ['namc_term_normalized', 'namc_term_diacritical_normalized', 'namc_term_devanagari_normalized', 'name_english_normalized', 'name_english_under_index_normalized', 'long_definition_normalized', 'ontology_branches_normalized', 'primary_index_related_normalized']
+08:11:35 | INFO    | Running data quality checks...
+08:11:35 | INFO    | OK: All expected important columns are present.
+08:11:35 | WARNING | WARNING: Column 'namc_code' has 5 duplicate value(s).
+08:11:35 | WARNING | WARNING: Column 'namc_term' has 4 empty value(s).
+08:11:35 | WARNING | WARNING: Column 'namc_term_diacritical' has 409 empty value(s).
+08:11:35 | WARNING | WARNING: Column 'name_english_under_index' has 2866 empty value(s).
+08:11:35 | WARNING | WARNING: Column 'namc_term_normalized' has 14 duplicate normalized value(s) (may be legitimate synonyms/sub-entries).
+08:11:35 | WARNING | WARNING: Column 'namc_term_diacritical_normalized' has 12 duplicate normalized value(s) (may be legitimate synonyms/sub-entries).
+08:11:35 | WARNING | WARNING: Column 'namc_term_devanagari_normalized' has 14 duplicate normalized value(s) (may be legitimate synonyms/sub-entries).
+08:11:35 | WARNING | WARNING: Column 'name_english_normalized' has 24 duplicate normalized value(s) (may be legitimate synonyms/sub-entries).
+08:11:35 | WARNING | WARNING: Column 'name_english_under_index_normalized' has 1 duplicate normalized value(s) (may be legitimate synonyms/sub-entries).
+08:11:35 | INFO    | Computing dataset statistics...
+08:11:35 | INFO    | Saving processed dataset...
+08:11:35 | INFO    | Saved: processed_data/cleaned_ayurveda_dataset.csv
+08:11:36 | INFO    | Saved: processed_data/cleaned_ayurveda_dataset.xlsx
+08:11:36 | INFO    | Saved: processed_data/dataset_statistics.json
+08:11:36 | INFO    | Saved: processed_data/data_quality_report.txt
+08:11:36 | INFO    | Preprocessing completed successfully.

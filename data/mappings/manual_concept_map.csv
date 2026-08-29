@@ -1,0 +1,3 @@
+source_code,target_code,target_system,equivalence,mapping_note
+EC-3.8.23,http://id.who.int/icd/entity/1754178993,ICD-11-TM2,equivalent,Mapped to Fever disorder (TM2)
+EC-3.8.23,http://id.who.int/icd/entity/332970146,ICD-11-Biomedicine,related,Mapped to Fever of other or unknown origin
