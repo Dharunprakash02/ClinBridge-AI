@@ -17,6 +17,34 @@ from backend.app.services.icd_service import icd_service
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+AYURVEDA_ROOT_TRANSLATIONS = {
+    "jvara": "fever",
+    "jvar": "fever",
+    "kasa": "cough",
+    "kas": "cough",
+    "svasa": "dyspnoea",
+    "shvasa": "dyspnoea",
+    "atisara": "diarrhoea",
+    "prameha": "diabetes",
+    "pandu": "anaemia",
+    "kamala": "jaundice",
+    "arshas": "haemorrhoids",
+    "kushtha": "skin disorder",
+    "kushta": "skin disorder",
+    "grahani": "malabsorption",
+    "gulma": "abdominal mass",
+    "udar": "ascites",
+    "unmada": "psychosis",
+    "apasmara": "epilepsy",
+    "amavata": "rheumatoid arthritis",
+    "sandhivata": "osteoarthritis",
+    "vatarakta": "gout",
+    "shula": "pain",
+    "shotha": "edema",
+    "sannipata": "fever",
+    "madhumeha": "diabetes"
+}
+
 class HybridMapper:
     def __init__(self):
         # Configuration for weights
@@ -53,6 +81,16 @@ class HybridMapper:
         # 1. Original term
         if source_record.term:
             queries.append(source_record.term)
+            norm_term = self.normalize_text(source_record.term)
+            if norm_term:
+                queries.append(norm_term)
+            
+            norm_lower = norm_term.lower().replace("-", " ")
+            for root, translation in AYURVEDA_ROOT_TRANSLATIONS.items():
+                if root in norm_lower:
+                    queries.append(translation)
+                    queries.append(f"{translation} disorder")
+                    break
             
         # 2. Extract meaningful terms from short definition
         if source_record.short_definition:
@@ -61,12 +99,10 @@ class HybridMapper:
                 queries.append(short_def)
                 
         # 3. Important clinical terms (mock logic: taking top nouns/verbs if NLP was available)
-        # We will split long definition and take some meaningful parts
         if source_record.long_definition:
-            # Simple heuristic for keyword extraction: words longer than 5 chars
             words = [w for w in self.normalize_text(source_record.long_definition).split() if len(w) > 5]
             if words:
-                queries.append(" ".join(words[:4])) # First 4 significant words
+                queries.append(" ".join(words[:4]))
                 
         # Filter empty queries
         queries = [q for q in queries if q and q.strip()]
@@ -104,14 +140,17 @@ class HybridMapper:
         
         for q_idx, query in enumerate(queries):
             results = icd_service.search_foundation(query)
-            if not results or "destinationEntities" not in results:
-                continue
+            entities = results.get("destinationEntities", []) if results else []
+            
+            if not entities:
+                results = icd_service.search_mms(query)
+                entities = results.get("destinationEntities", []) if results else []
                 
-            entities = results["destinationEntities"][:top_n]
+            entities = entities[:top_n]
             
             for rank, entity in enumerate(entities):
                 uri = entity.get("id")
-                if uri in candidates_map:
+                if not uri or uri in candidates_map:
                     continue
                     
                 # Fetch full entity details
@@ -257,7 +296,31 @@ class HybridMapper:
                 best_candidate = candidate
                 
         if not best_candidate:
-            return None
+            return HybridMappingResult(
+                namaste_code=source.namaste_code,
+                namaste_term=source.term,
+                namaste_definition=source.short_definition or source.long_definition or "",
+                icd11_code="NO_MATCH",
+                icd11_title="NO SUITABLE CANDIDATE FOUND",
+                icd11_definition=None,
+                icd11_uri=None,
+                lexical_score=0.0,
+                token_score=0.0,
+                fuzzy_score=0.0,
+                synonym_score=0.0,
+                translation_score=0.0,
+                transliteration_score=0.0,
+                definition_score=0.0,
+                clinical_score=0.0,
+                semantic_score=0.0,
+                api_rank_score=0.0,
+                conflict_penalty=0.0,
+                final_score=0.0,
+                confidence_level="NO_MATCH",
+                relationship_type="no_match",
+                mapping_status="NO_MATCH",
+                mapping_method="HYBRID"
+            )
             
         confidence = self.determine_confidence(best_scores["final_score"])
         relationship = self.determine_relationship(best_scores, confidence)

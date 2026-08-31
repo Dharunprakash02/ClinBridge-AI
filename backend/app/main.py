@@ -7,12 +7,18 @@ from contextlib import asynccontextmanager
 # Ensure backend modules can be imported
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
+from backend.app.db.database import engine, Base
+import backend.app.db.models  # ensure models are registered
 from backend.app.api.routes.api import router as api_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
     print("Starting ClinBridge AI Backend...")
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"Warning: Database initialization error: {e}")
     yield
     # Shutdown logic
     print("Shutting down ClinBridge AI Backend...")

@@ -70,6 +70,9 @@ python scripts/database/seed_namaste.py
 3. Start the FastAPI server:
 ```bash
 uvicorn backend.app.main:app --reload
+
+python backend/scripts/database/seed_concept_map.py
+
 ```
 
 ### 3. Frontend Setup

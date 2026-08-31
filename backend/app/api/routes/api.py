@@ -35,7 +35,7 @@ def translate_code(source_code: str, db: Session = Depends(get_db)):
     """Translate a NAMASTE code to ICD-11 URIs."""
     mappings = mapping_service.get_mappings_for_source(db, source_code)
     if not mappings:
-        raise HTTPException(status_code=404, detail="No mapping found for the given code")
+        return []
         
     response = []
     for m in mappings:
