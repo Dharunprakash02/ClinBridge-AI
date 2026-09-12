@@ -364,15 +364,26 @@ class HybridMapper:
     def run(self, limit: int = None):
         db = SessionLocal()
         try:
-            query = db.query(NamasteCode).filter(NamasteCode.namaste_code != 'EC-3.8.23')
+            saved_codes = db.query(HybridMappingResult.namaste_code).distinct()
+            query = db.query(NamasteCode).filter(
+                NamasteCode.namaste_code != 'EC-3.8.23',
+                ~NamasteCode.namaste_code.in_(saved_codes)
+            )
             codes = query.limit(limit).all() if limit else query.all()
+            logger.info("Found %d unsaved diseases to process.", len(codes))
             
             # Phase 15: Database Update
             for code in codes:
-                result = self.process_record(code)
+                try:
+                    result = self.process_record(code)
+                except (RuntimeError, ValueError) as exc:
+                    logger.error(
+                        "Stopping mapper because the WHO API is unavailable: %s. "
+                        "Saved results are preserved; rerun later to resume.",
+                        exc,
+                    )
+                    break
                 if result:
-                    # Remove old if exists
-                    db.query(HybridMappingResult).filter_by(namaste_code=code.namaste_code).delete()
                     db.add(result)
                     db.commit()
                     logger.info(f"Saved mapping for {code.namaste_code}: {result.icd11_title} ({result.confidence_level})")

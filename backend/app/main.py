@@ -11,12 +11,33 @@ from backend.app.db.database import engine, Base
 import backend.app.db.models  # ensure models are registered
 from backend.app.api.routes.api import router as api_router
 
+def _seed_database():
+    """Initialize database with seed data on startup."""
+    try:
+        from backend.scripts.database.seed_namaste import seed_data
+        from backend.scripts.database.seed_concept_map import seed_concept_map
+        
+        print("Seeding NAMASTE codes...")
+        seed_data()
+        
+        print("Seeding Concept Map...")
+        seed_concept_map()
+        
+        print("Database seeding completed successfully.")
+    except Exception as e:
+        print(f"Warning: Database seeding error (this may be expected if already seeded): {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
     print("Starting ClinBridge AI Backend...")
     try:
+        print("Creating database tables...")
         Base.metadata.create_all(bind=engine)
+        print("Tables created successfully.")
+        
+        print("Initializing database with seed data...")
+        _seed_database()
     except Exception as e:
         print(f"Warning: Database initialization error: {e}")
     yield

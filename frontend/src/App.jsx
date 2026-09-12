@@ -13,6 +13,7 @@ function App() {
   const [results, setResults] = useState([]);
   const [selectedTerm, setSelectedTerm] = useState(null);
   const [translations, setTranslations] = useState(null);
+  const [translationError, setTranslationError] = useState(null);
   
   const [patient, setPatient] = useState({
     first_name: 'Ram',
@@ -37,6 +38,7 @@ function App() {
       setResults(res.data);
       setSelectedTerm(null);
       setTranslations(null);
+      setTranslationError(null);
       setBundle(null);
     } catch (err) {
       console.error(err);
@@ -48,6 +50,7 @@ function App() {
   const selectTerm = async (term) => {
     setSelectedTerm(term);
     setTransLoading(true);
+    setTranslationError(null);
     setBundle(null);
     
     try {
@@ -55,7 +58,8 @@ function App() {
       setTranslations(res.data);
     } catch (err) {
       console.error(err);
-      setTranslations([]); // Empty means no translation mapped
+      setTranslations([]);
+      setTranslationError('Unable to load the ICD-11 mapping.');
     } finally {
       setTransLoading(false);
     }
@@ -131,7 +135,7 @@ function App() {
               <div className="translations-box">
                 <h3 style={{marginBottom: '0.5rem'}}><Activity size={18} style={{verticalAlign: 'bottom'}}/> ICD-11 Translations</h3>
                 {translations.length === 0 ? (
-                  <p style={{color: 'var(--text-secondary)'}}>No mappings available for this code.</p>
+                  <p style={{color: 'var(--text-secondary)'}}>{translationError || 'No mapping has been generated for this code yet.'}</p>
                 ) : (
                   translations.map((t, idx) => {
                     let titleStr = t.icd11_title || 'Unknown Title';
@@ -143,7 +147,7 @@ function App() {
                           <span style={{padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', background: 'rgba(255,255,255,0.1)'}}>{t.confidence_level}</span>
                         </div>
                         <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '8px 0'}}>
-                          URI: {t.icd11_uri || 'N/A'} <br/>
+                          URI: {t.icd11_uri || t.target_uri || 'N/A'} <br/>
                           Relationship: {t.relationship_type} | Final Score: {(t.final_score * 100).toFixed(1)}% | Method: {t.mapping_method}
                         </div>
                         

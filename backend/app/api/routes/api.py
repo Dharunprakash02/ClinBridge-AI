@@ -43,6 +43,7 @@ def translate_code(source_code: str, db: Session = Depends(get_db)):
             "source_code": m.namaste_code,
             "target_system": m.icd11_release,
             "target_uri": m.icd11_uri,
+            "icd11_uri": m.icd11_uri,
             "equivalence": m.relationship_type,
             "icd11_title": m.icd11_title,
             "icd11_code": m.icd11_code,
