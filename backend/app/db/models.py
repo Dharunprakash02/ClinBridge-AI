@@ -91,3 +91,21 @@ class HybridMappingResult(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+class MappingDecision(Base):
+    """Stores reviewer actions (Accept, Modify, Reject) and audit metadata."""
+    __tablename__ = "mapping_decisions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    source_term = Column(Text, nullable=False, index=True)
+    source_code = Column(String(50), index=True)
+    selected_candidate_code = Column(String(50))
+    selected_candidate_title = Column(Text)
+    previous_score = Column(Float, default=0.0)
+    confidence = Column(Float, default=0.0)
+    decision_class = Column(String(50))
+    reviewer_action = Column(String(50), nullable=False) # ACCEPT, MODIFY, REJECT
+    reviewer_comment = Column(Text)
+    evidence_used = Column(Text)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+

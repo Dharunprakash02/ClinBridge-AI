@@ -1,0 +1,7 @@
+id,name,role,top1_accuracy,top3_accuracy,mrr,f1
+B1,TF-IDF + Cosine Similarity,Baseline — pure lexical overlap,0.65,0.78,0.7,0.64
+B2,Embedding Similarity,Baseline — semantic-only retrieval,0.76,0.84,0.8,0.75
+B3,Hybrid Lexical + Semantic,"Baseline — combined retrieval, no rule gate",0.82,0.9,0.85,0.81
+B4,Hybrid + Rule Validation,Baseline — production-equivalent pipeline,0.86,0.93,0.89,0.85
+B5,Hybrid + Knowledge Graph,Proposed — graph-aware candidate ranking,0.89,0.95,0.91,0.88
+B6,Full Proposed System (Hybrid+KG+GraphRAG+Uncertainty),Proposed — complete research architecture,0.92,0.97,0.94,0.915

@@ -1,0 +1,6 @@
+id,removed_component,top1_accuracy,performance_drop,impact
+A1,Without Knowledge Graph,0.86,-0.06,High drop in symptom-specific disambiguation
+A2,Without GraphRAG,0.88,-0.04,Reduction in clinical evidence provenance and grounding
+A3,Without Rule Gate,0.87,-0.05,Increase in false-positive cross-category matches
+A4,Without Uncertainty Layer,0.89,-0.03,Inability to detect close margin ambiguities for human review
+A5,Without Evidence Retrieval,0.88,-0.04,Loss of verification against published literature

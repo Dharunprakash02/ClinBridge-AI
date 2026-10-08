@@ -1,0 +1,52 @@
+[
+  {
+    "evidence_id": "ev_who_icd11_tm2_guide",
+    "title": "WHO ICD-11 Reference Guide - Chapter 26: Traditional Medicine Module 2",
+    "source": "World Health Organization",
+    "document_type": "Classification Guideline",
+    "publication_year": 2026,
+    "source_url": "https://icd.who.int/en/docs/chapter26-tm2-reference.pdf",
+    "text": "Traditional Medicine Module 2 (TM2) enables standardized recording of Ayurveda, Siddha, and Unani morbidity patterns. Diagnostic patterns such as Jwara (pyrexial disorders) map to specific febrile disorder categories in ICD-11 biomedicine and TM2 pattern designations.",
+    "concept_ids": ["AYU", "SR11", "MG26", "Jwara", "fever"]
+  },
+  {
+    "evidence_id": "ev_namaste_portal_ayush",
+    "title": "National AYUSH Morbidity and Standardized Terminologies Electronic (NAMASTE) Portal",
+    "source": "Ministry of AYUSH, Government of India",
+    "document_type": "Standardized Terminology Standard",
+    "publication_year": 2024,
+    "source_url": "https://namstp.ayush.gov.in/",
+    "text": "National Ayurveda Morbidity Codes (NAMC) define diagnostic conditions, dosha derangements, and clinical manifestations based on classical Ayurvedic compendia (Charaka Samhita, Sushruta Samhita).",
+    "concept_ids": ["DIS", "A", "AA", "SR11", "SR12", "Jwara", "Vata", "Pitta", "Kapha"]
+  },
+  {
+    "evidence_id": "ev_charaka_samhita_jwara",
+    "title": "Charaka Samhita - Chikitsa Sthana (Chapter 3: Jwara Chikitsitam)",
+    "source": "Classical Ayurvedic Text",
+    "document_type": "Clinical Compendium",
+    "publication_year": 2018,
+    "source_url": "https://niimh.nic.in/ebooks/echarak/",
+    "text": "Jwara is the lord of all diseases characterized by Santapa (elevated heat/temperature), Aruchi (anorexia), Trishna (excessive thirst), Angamarda (body ache), and Hridvyatha (restlessness).",
+    "concept_ids": ["SR11", "Jwara", "fever", "thirst", "anorexia", "pain"]
+  },
+  {
+    "evidence_id": "ev_icd11_fever_spec",
+    "title": "ICD-11 Entity Specification: MG26 Symptoms or signs involving the body temperature",
+    "source": "World Health Organization ICD-11 Browser",
+    "document_type": "Clinical Specification",
+    "publication_year": 2026,
+    "source_url": "https://icd.who.int/browse/2026-01/mms/en#MG26",
+    "text": "MG26 covers pyrexia of unknown origin, hyperpyrexia, and elevated body temperature in response to systemic inflammation, infection, or thermoregulatory disturbance.",
+    "concept_ids": ["MG26", "fever", "pyrexia", "temperature"]
+  },
+  {
+    "evidence_id": "ev_kasa_respiratory_icd11",
+    "title": "ICD-11 Entity Specification: MD30 Cough",
+    "source": "World Health Organization ICD-11 Browser",
+    "document_type": "Clinical Specification",
+    "publication_year": 2026,
+    "source_url": "https://icd.who.int/browse/2026-01/mms/en#MD30",
+    "text": "MD30 describes cough as a sudden, repetitive reflex response to airway irritation or respiratory conditions, corresponding closely with Ayurvedic Kasa roga.",
+    "concept_ids": ["MD30", "kasa", "cough", "respiratory"]
+  }
+]

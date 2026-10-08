@@ -1,0 +1,5 @@
+error_type,source_term,predicted,ground_truth,confidence,reason
+Lexical Ambiguity,Shoola (colic/pain),"Abdominal pain, unspecified",Colic disorder (TM2),0.62,Single generic token without clarifying anatomical qualification.
+Terminology Granularity Mismatch,Vataja Jwara,Pyrexia of unknown origin,Fever associated with Vata dosha pattern (TM2),0.71,Western biomedicine lacks direct dosha specificity; requires TM2 Chapter 26 dual-coding.
+Equivalent vs Related Confusion,Pandu Roga,Iron deficiency anaemia,Disorders of blood and complexion (TM2),0.74,Pandu has broader systemic implications in Ayurveda than simple haematological anaemia.
+Insufficient Context,Unmada,"Psychotic disorder, unspecified",Mental disorder pattern (TM2),0.58,Ambiguous stage definitions in short classical snippet.

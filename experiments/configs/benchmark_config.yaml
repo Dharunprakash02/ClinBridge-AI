@@ -1,0 +1,52 @@
+experiment_name: "ClinBridge AI: NAMASTE to ICD-11 Mapping Benchmark"
+version: "2.0.0"
+date: "2026-10-08"
+
+evaluation:
+  dataset_size: 1000
+  reference_dataset: "data/processed/cleaned_ayurveda_dataset.csv"
+  evidence_store: "data/evidence/curated_medical_references.json"
+  k_values: [1, 3, 5]
+
+scoring_weights:
+  w_textual: 0.25
+  w_semantic: 0.35
+  w_rank: 0.15
+  w_graph_consistency: 0.25
+
+uncertainty_thresholds:
+  high_confidence: 0.80
+  low_confidence: 0.55
+  ambiguity_margin_delta: 0.10
+
+baselines:
+  - id: "B1"
+    name: "TF-IDF + Cosine Similarity"
+    description: "Pure lexical overlap retrieval without embeddings or graph context"
+  - id: "B2"
+    name: "Embedding Similarity"
+    description: "Semantic representation matching only"
+  - id: "B3"
+    name: "Hybrid Lexical + Semantic"
+    description: "Combined lexical and semantic score without rule gate"
+  - id: "B4"
+    name: "Hybrid + Rule Validation"
+    description: "Production baseline with deterministic compatibility checks"
+  - id: "B5"
+    name: "Hybrid + Knowledge Graph"
+    description: "Adds GraphConsistencyScore from symptom and dosha subgraphs"
+  - id: "B6"
+    name: "Full Proposed System"
+    description: "Hybrid + KG + GraphRAG + Explainability + Uncertainty Engine"
+
+ablations:
+  - id: "A1"
+    removed_component: "Knowledge Graph"
+  - id: "A2"
+    removed_component: "GraphRAG Evidence Retrieval"
+  - id: "A3"
+    removed_component: "Deterministic Rule Gate"
+  - id: "A4"
+    removed_component: "Uncertainty Layer"
+  - id: "A5"
+    removed_component: "Evidence Support Retrieval"

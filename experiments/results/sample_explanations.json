@@ -1,0 +1,10 @@
+[
+  {
+    "term": "Jwara",
+    "icd11_code": "MG26",
+    "icd11_title": "Symptoms or signs involving the body temperature",
+    "explanation": "Strong semantic similarity (0.91), verified symptom overlap (fever, burning sensation) in Knowledge Graph, supported by WHO ICD-11 Reference Guide Chapter 26.",
+    "rule_gate_status": "PASS",
+    "confidence": 0.92
+  }
+]
