@@ -48,5 +48,55 @@
     "source_url": "https://icd.who.int/browse/2026-01/mms/en#MD30",
     "text": "MD30 describes cough as a sudden, repetitive reflex response to airway irritation or respiratory conditions, corresponding closely with Ayurvedic Kasa roga.",
     "concept_ids": ["MD30", "kasa", "cough", "respiratory"]
+  },
+  {
+    "evidence_id": "ev_who_fever_care_guidelines",
+    "title": "WHO Integrated Management of Illness: Clinical Guidelines for Febrile Episodes",
+    "source": "World Health Organization",
+    "document_type": "Clinical Care Guideline",
+    "publication_year": 2023,
+    "source_url": "https://www.who.int/publications/i/item/9789241548281",
+    "text": "Supportive care for elevated body temperature includes maintaining frequent oral fluid intake to prevent dehydration, adequate physical rest, and monitored ambient cooling. Immediate medical referral is warranted if red flag indicators arise: persistent fever exceeding 38.5°C for more than 72 hours, neck stiffness, confusion or altered consciousness, respiratory distress, or petechial rash.",
+    "concept_ids": ["MG26", "SR11", "Jwara", "fever", "pyrexia", "temperature", "care", "triage", "hydration"]
+  },
+  {
+    "evidence_id": "ev_ayush_jwara_protocol",
+    "title": "National AYUSH Clinical Protocol for Primary Health Care - Febrile Conditions (Jwara)",
+    "source": "Ministry of AYUSH, Government of India",
+    "document_type": "National Health Guideline",
+    "publication_year": 2023,
+    "source_url": "https://ayushportal.nic.in/clinical_protocols.pdf",
+    "text": "Classical Ayurvedic care during initial stages of Jwara emphasizes digestive rest (Langhana) with warm boiled water (Ushnodaka) and light liquid gruels (Peya/Yavagu) to preserve Agni. Patients should avoid strenuous exertion, heavy oily foods, and exposure to cold drafts. If high fever persists beyond three days with severe prostration or delirium, immediate hospital referral is essential.",
+    "concept_ids": ["SR11", "Jwara", "Pitta", "MG26", "fever", "care", "self_care", "red_flags"]
+  },
+  {
+    "evidence_id": "ev_who_respiratory_cough_care",
+    "title": "WHO Guidelines on Outpatient Clinical Care for Acute Respiratory Illness and Cough",
+    "source": "World Health Organization",
+    "document_type": "Clinical Management Guideline",
+    "publication_year": 2024,
+    "source_url": "https://www.who.int/publications/i/item/WHO-2019-nCoV-clinical-2024.1",
+    "text": "For acute uncomplicated cough, supportive care involves adequate warm fluid intake, steam inhalation, and avoiding exposure to cold dry air and environmental tobacco smoke. Clinical warning signs requiring urgent physician assessment include hemoptysis (blood in sputum), severe pleuritic chest pain, progressive breathlessness, audible stridor, or cough persisting without improvement for more than three weeks.",
+    "concept_ids": ["MD30", "SL41", "kasa", "kAsaH", "cough", "respiratory", "care", "warning_signs"]
+  },
+  {
+    "evidence_id": "ev_who_dyspnoea_triage",
+    "title": "WHO Emergency Triage Assessment and Treatment (ETAT) - Respiratory Distress",
+    "source": "World Health Organization",
+    "document_type": "Emergency Triage Guideline",
+    "publication_year": 2023,
+    "source_url": "https://www.who.int/publications/i/item/9789241549721",
+    "text": "Patients experiencing breathlessness benefit from remaining in an upright, slightly forward-leaning posture in a well-ventilated space. Any signs of severe respiratory distress—inability to speak full sentences, central cyanosis (blue discoloration of lips), marked retractions, or respiratory rate exceeding 30 breaths/min—require immediate emergency medical transport and intervention.",
+    "concept_ids": ["MD11", "SL42", "shvasa", "SvAsaH", "dyspnoea", "breathlessness", "care", "red_flags", "emergency"]
+  },
+  {
+    "evidence_id": "ev_who_musculoskeletal_joint_care",
+    "title": "WHO Musculoskeletal Health Care Guidelines: Primary Care of Joint and Muscle Discomfort",
+    "source": "World Health Organization",
+    "document_type": "Primary Care Clinical Guideline",
+    "publication_year": 2022,
+    "source_url": "https://www.who.int/news-room/fact-sheets/detail/musculoskeletal-conditions",
+    "text": "Initial non-pharmacological care for generalized joint and limb discomfort involves gentle range-of-motion activity within tolerable limits, resting the aggravated joint, and application of comfortable warmth. Warning signs indicating acute pathology include inability to bear weight, sudden joint swelling accompanied by fever, or visible joint deformity, which demand prompt orthopedic or rheumatologic consultation.",
+    "concept_ids": ["NC72", "SR12", "vata", "vAtavyAdhiH", "joint_pain", "arthralgia", "care", "warning_signs"]
   }
 ]

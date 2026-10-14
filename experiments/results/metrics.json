@@ -1,19 +1,94 @@
 {
-  "dataset_size": 1000,
-  "evaluation_protocol": "Standardized 1000-case NAMASTE-to-ICD11 Ground Truth Reference",
-  "primary_metrics": {
-    "top1_accuracy": 0.92,
-    "top3_accuracy": 0.97,
-    "recall_at_k": 0.98,
-    "precision": 0.91,
-    "recall": 0.92,
-    "f1_score": 0.915,
-    "mrr": 0.94
+  "dataset_name": "Standardized Ayurveda-ICD11 Pilot Reference Set",
+  "dataset_size": 12,
+  "is_sample_benchmark": true,
+  "status_label": "Evaluated on Curated Reference Set (N=12) \u2014 Research Pilot Output",
+  "metrics": {
+    "top1_accuracy": 0.9167,
+    "recall_at_3": 0.9167,
+    "mrr": 0.9167,
+    "f1_score": 0.9167
   },
-  "reliability_metrics": {
-    "false_equivalent_rate": 0.03,
-    "rule_rejection_rate": 0.08,
-    "ambiguity_detection_accuracy": 0.93,
-    "human_acceptance_rate": 0.95
-  }
+  "baselines": [
+    {
+      "id": "B1",
+      "name": "TF-IDF + Cosine Similarity",
+      "top1_accuracy": 0.0833,
+      "recall_at_3": 0.25,
+      "mrr": 0.1528,
+      "f1_score": 0.125
+    },
+    {
+      "id": "B2",
+      "name": "Embedding Similarity",
+      "top1_accuracy": 0.8333,
+      "recall_at_3": 0.8333,
+      "mrr": 0.8333,
+      "f1_score": 0.8333
+    },
+    {
+      "id": "B3",
+      "name": "Hybrid Lexical + Semantic",
+      "top1_accuracy": 0.8333,
+      "recall_at_3": 0.8333,
+      "mrr": 0.8333,
+      "f1_score": 0.8333
+    },
+    {
+      "id": "B4",
+      "name": "Hybrid + Rule Validation",
+      "top1_accuracy": 0.8333,
+      "recall_at_3": 0.8333,
+      "mrr": 0.8333,
+      "f1_score": 0.8333
+    },
+    {
+      "id": "B5",
+      "name": "Hybrid + Knowledge Graph",
+      "top1_accuracy": 0.8333,
+      "recall_at_3": 0.8333,
+      "mrr": 0.8333,
+      "f1_score": 0.8333
+    },
+    {
+      "id": "B6",
+      "name": "Full Proposed System",
+      "top1_accuracy": 0.9167,
+      "recall_at_3": 0.9167,
+      "mrr": 0.9167,
+      "f1_score": 0.9167
+    }
+  ],
+  "ablations": [
+    {
+      "id": "A1",
+      "removed_component": "Without Knowledge Graph",
+      "top1_accuracy": 0.8333,
+      "performance_drop": -0.0834
+    },
+    {
+      "id": "A2",
+      "removed_component": "Without GraphRAG Evidence",
+      "top1_accuracy": 0.8333,
+      "performance_drop": -0.0834
+    },
+    {
+      "id": "A3",
+      "removed_component": "Without Rule Gate",
+      "top1_accuracy": 0.8333,
+      "performance_drop": -0.0834
+    },
+    {
+      "id": "A4",
+      "removed_component": "Without Uncertainty Layer",
+      "top1_accuracy": 0.8333,
+      "performance_drop": -0.0834
+    },
+    {
+      "id": "A5",
+      "removed_component": "Without Hybrid Retrieval (Lexical Only)",
+      "top1_accuracy": 0.0833,
+      "performance_drop": -0.8334
+    }
+  ]
 }

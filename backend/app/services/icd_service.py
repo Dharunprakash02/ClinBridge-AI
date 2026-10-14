@@ -1,7 +1,7 @@
 import time
 import requests
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from functools import lru_cache
 from backend.app.core.config import config
 
@@ -101,5 +101,21 @@ class ICDService:
         except requests.RequestException as e:
             logger.error(f"Failed to fetch ICD-11 entity at URI '{uri}': {e}")
             return None
+
+    def search_icd11(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """Search ICD-11 entities via MMS and foundation endpoints."""
+        results = []
+        try:
+            mms_data = self.search_mms(query)
+            if mms_data and "destinationEntities" in mms_data:
+                for ent in mms_data["destinationEntities"][:limit]:
+                    results.append({
+                        "code": ent.get("theCode", "UNKNOWN"),
+                        "title": ent.get("title", ""),
+                        "uri": ent.get("id", "")
+                    })
+        except Exception as e:
+            logger.debug(f"ICD-11 live search failed: {e}")
+        return results
 
 icd_service = ICDService()

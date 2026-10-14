@@ -8,7 +8,9 @@ from backend.app.services.icd_service import icd_service
 from backend.app.services.mapping_service import mapping_service
 from backend.app.services.mapping_pipeline import mapping_pipeline_service
 from backend.app.services.knowledge_graph import graph_query_service
-from backend.app.services.graph_rag import evidence_store, grounded_explanation_generator
+from backend.app.services.graph_rag import (
+    evidence_store, grounded_explanation_generator, care_suggestions_service
+)
 from backend.app.services.mapping.rule_gate import rule_validation_gate
 from backend.app.fhir.codesystem import generate_namaste_codesystem
 from backend.app.fhir.conceptmap import generate_concept_map
@@ -17,9 +19,12 @@ from backend.app.schemas.schemas import (
     MappingRequest,
     MappingPipelineResponse,
     ExplainRequest,
-    ReviewMappingRequest
+    ReviewMappingRequest,
+    CareSuggestionsRequest,
+    PatientReportRequest
 )
 from backend.app.fhir.bundle import generate_clinical_bundle
+from backend.app.services.reporting import patient_report_generator
 
 router = APIRouter()
 
@@ -170,42 +175,51 @@ def run_direct_rag_explain(payload: Dict[str, Any]):
     )
     return res.dict()
 
+@router.post("/care-suggestions")
+def get_care_suggestions(payload: CareSuggestionsRequest):
+    """
+    Generates AI-powered evidence-grounded care suggestions for a mapped clinical condition.
+    Withholds suggestions if mapping is ambiguous, rejected, or unmapped.
+    """
+    res = care_suggestions_service.generate_suggestions(
+        source_term=payload.source_term,
+        candidate_code=payload.candidate_code,
+        candidate_title=payload.candidate_title,
+        decision_class=payload.decision_class or "AUTO_ACCEPTED",
+        graph_context=payload.graph_context
+    )
+    return res.dict()
+
 # ---------------------------------------------------------
 # Evaluation & Benchmark Metrics
 # ---------------------------------------------------------
 @router.get("/evaluation/results")
 def get_evaluation_results():
-    """Serves standardized evaluation and ablation results."""
-    return {
-        "evaluation_dataset_size": 1000,
-        "metrics": {
-            "top1_accuracy": 0.92,
-            "top3_accuracy": 0.97,
-            "recall_at_k": 0.98,
-            "precision": 0.91,
-            "recall": 0.92,
-            "f1_score": 0.915,
-            "mrr": 0.94,
-            "rule_rejection_rate": 0.08,
-            "evidence_support_rate": 0.94,
-            "human_acceptance_rate": 0.95
-        },
-        "baselines": [
-            {"id": "B1", "name": "TF-IDF + Cosine Similarity", "top1_acc": 0.65, "mrr": 0.70},
-            {"id": "B2", "name": "Embedding Similarity", "top1_acc": 0.76, "mrr": 0.80},
-            {"id": "B3", "name": "Hybrid Lexical + Semantic", "top1_acc": 0.82, "mrr": 0.85},
-            {"id": "B4", "name": "Hybrid + Rule Validation", "top1_acc": 0.86, "mrr": 0.89},
-            {"id": "B5", "name": "Hybrid + Knowledge Graph", "top1_acc": 0.89, "mrr": 0.91},
-            {"id": "B6", "name": "Full Proposed (Hybrid+KG+GraphRAG+Uncertainty)", "top1_acc": 0.92, "mrr": 0.94}
-        ],
-        "ablations": [
-            {"id": "A1", "name": "Without Knowledge Graph", "top1_acc": 0.86, "drop": -0.06},
-            {"id": "A2", "name": "Without GraphRAG Evidence", "top1_acc": 0.88, "drop": -0.04},
-            {"id": "A3", "name": "Without Rule Gate", "top1_acc": 0.87, "drop": -0.05},
-            {"id": "A4", "name": "Without Uncertainty Engine", "top1_acc": 0.89, "drop": -0.03},
-            {"id": "A5", "name": "Without Multi-Factor Ranking", "top1_acc": 0.82, "drop": -0.10}
-        ]
-    }
+    """Serves standardized, computed evaluation and ablation results from the benchmark suite."""
+    import os
+    import json
+    
+    results_json = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "experiments", "results", "metrics.json")
+    if os.path.exists(results_json):
+        try:
+            with open(results_json, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+
+    # If metrics file missing, execute benchmark runner to compute fresh metrics
+    try:
+        from experiments.benchmark_runner import run_benchmarks
+        return run_benchmarks()
+    except Exception as e:
+        return {
+            "status_label": "Not Yet Evaluated",
+            "is_sample_benchmark": False,
+            "error": str(e),
+            "metrics": {},
+            "baselines": [],
+            "ablations": []
+        }
 
 # ---------------------------------------------------------
 # Legacy Search, Translate & FHIR Endpoints
@@ -281,15 +295,57 @@ def generate_bundle(request: GenerateBundleRequest, db: Session = Depends(get_db
     mappings = mapping_service.get_mappings_for_source(db, request.namaste_code)
     translations = []
     for m in mappings:
+        if m.icd11_code and m.icd11_code != "NO_MATCH":
+            translations.append({
+                "target_uri": m.icd11_uri or m.icd11_code,
+                "icd11_title": m.icd11_title or m.icd11_code
+            })
+
+    # If DB mapping wasn't found but a candidate was selected from the live pipeline
+    if not translations and request.selected_candidate_code:
         translations.append({
-            "target_uri": m.icd11_uri,
-            "icd11_title": m.icd11_title or "Unknown ICD-11 Entity"
+            "target_uri": f"http://id.who.int/icd/entity/{request.selected_candidate_code}",
+            "icd11_title": request.selected_candidate_code
         })
-        
+
+    is_confirmed = len(translations) > 0
+    decision_class = "AUTO_ACCEPTED" if is_confirmed else "UNMAPPED"
+
+    # Enforce FHIR integrity: Block definitive mapping for completely unresolved concepts unless force_unverified
+    if not is_confirmed and not request.force_unverified:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot generate definitive mapped Condition resource: candidate is unmapped or lacks verified target coding. Automatic decision required."
+        )
+
     bundle = generate_clinical_bundle(
         patient_data=request.patient.dict(),
         condition_code=request.namaste_code,
         condition_term=condition_term,
-        translations=translations
+        translations=translations,
+        is_confirmed=is_confirmed,
+        decision_class=decision_class
     )
     return bundle
+
+@router.post("/reports/patient-mapping")
+def generate_patient_mapping_report(request: PatientReportRequest):
+    """
+    Generates a complete, professional patient terminology-mapping report
+    covering all 10 standard clinical sections.
+    Validates patient data and prevents fabricated codes or equivalence claims.
+    """
+    try:
+        report = patient_report_generator.generate_report(
+            patient=request.patient,
+            namaste_term=request.namaste_term,
+            namaste_code=request.namaste_code,
+            candidate=request.candidate,
+            pipeline_data=request.pipeline_data
+        )
+        return report.dict()
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Report generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate patient mapping report: {e}")

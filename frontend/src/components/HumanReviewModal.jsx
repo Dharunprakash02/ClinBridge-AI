@@ -50,16 +50,37 @@ export default function HumanReviewModal({ candidate, sourceTerm, onReviewComple
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Review Action Controls */}
       <div className="glass-panel" style={{ padding: '1.5rem' }}>
-        <h3 style={{ fontSize: '1.2rem', color: '#f8fafc', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Shield size={20} color="#38bdf8" /> Human-in-the-Loop Review Workspace
-        </h3>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-          Evaluate the AI proposed mapping for <strong>{sourceTerm}</strong> &rarr; <strong>{candidate?.term || 'No candidate selected'}</strong>.
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+          <h3 style={{ fontSize: '1.2rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+            <Shield size={20} color="#38bdf8" /> Audit Log & Administrative Overrides (Optional)
+          </h3>
+          <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+            Automated Decision Policy Active
+          </span>
+        </div>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '1rem', lineHeight: 1.5 }}>
+          ClinBridge AI automatically classifies candidates via policy thresholds. Human review is <strong>non-blocking</strong> and used exclusively for post-hoc clinical auditing, quality assurance, or manual overrides.
         </p>
+
+        {candidate && (
+          <div style={{ padding: '0.75rem', borderRadius: '6px', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255, 255, 255, 0.07)', marginBottom: '1rem', fontSize: '0.88rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+              <span>Target: <strong>{candidate.term}</strong> ({candidate.code})</span>
+              <span className={`badge ${candidate.decision === 'AUTO_ACCEPTED' ? 'badge-high' : candidate.decision === 'AMBIGUOUS' ? 'badge-ambiguous' : 'badge-low'}`}>
+                {candidate.decision || 'PENDING'}
+              </span>
+            </div>
+            {candidate.decision_reason && (
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                Automated Policy Rationale: {candidate.decision_reason}
+              </div>
+            )}
+          </div>
+        )}
 
         <textarea
           rows={3}
-          placeholder="Enter clinical rationale or reviewer notes (optional)..."
+          placeholder="Enter clinical audit notes or reason for administrative override (optional)..."
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           style={{ marginBottom: '1rem' }}
@@ -72,7 +93,7 @@ export default function HumanReviewModal({ candidate, sourceTerm, onReviewComple
             disabled={actionLoading || !candidate}
             onClick={() => handleReviewAction('ACCEPT')}
           >
-            <CheckCircle2 size={16} /> Accept & Validate
+            <CheckCircle2 size={16} /> Audit: Endorse Candidate
           </button>
           <button
             className="primary-btn"
@@ -80,7 +101,7 @@ export default function HumanReviewModal({ candidate, sourceTerm, onReviewComple
             disabled={actionLoading || !candidate}
             onClick={() => handleReviewAction('MODIFY')}
           >
-            <Edit3 size={16} /> Modify Target
+            <Edit3 size={16} /> Admin Override: Modify
           </button>
           <button
             className="primary-btn"
@@ -88,7 +109,7 @@ export default function HumanReviewModal({ candidate, sourceTerm, onReviewComple
             disabled={actionLoading || !candidate}
             onClick={() => handleReviewAction('REJECT')}
           >
-            <XCircle size={16} /> Reject Mapping
+            <XCircle size={16} /> Admin Override: Reject
           </button>
         </div>
       </div>

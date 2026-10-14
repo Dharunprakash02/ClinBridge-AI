@@ -10,12 +10,17 @@ import {
   BarChart3,
   BrainCircuit,
   Copy,
-  Download
+  Download,
+  FileText,
+  Printer
 } from 'lucide-react';
 import PipelineVisualizer from './components/PipelineVisualizer';
 import ExplainabilityCard from './components/ExplainabilityCard';
+import CareSuggestionsCard from './components/CareSuggestionsCard';
 import HumanReviewModal from './components/HumanReviewModal';
 import ResearchDashboard from './components/ResearchDashboard';
+import PatientReportModal from './components/PatientReportModal';
+import { generateAndDownloadPatientReportPdf } from './utils/pdfReportGenerator';
 import './index.css';
 
 const API_BASE = 'http://127.0.0.1:8000/api/v1';
@@ -41,6 +46,11 @@ export default function App() {
   const [bundle, setBundle] = useState(null);
   const [bundleLoading, setBundleLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Patient Mapping Report state
+  const [reportData, setReportData] = useState(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
 
   const runMappingPipeline = async (e) => {
     if (e) e.preventDefault();
@@ -76,18 +86,67 @@ export default function App() {
   const generateFhirBundle = async () => {
     if (!selectedCandidate) return;
     setBundleLoading(true);
+    setErrorMessage(null);
     try {
       const payload = {
         patient,
         namaste_code: pipelineData?.source_code || 'NAMC-AYU',
-        namaste_term: pipelineData?.source_term || searchQuery
+        namaste_term: pipelineData?.source_term || searchQuery,
+        selected_candidate_code: selectedCandidate?.code,
+        force_unverified: false
       };
       const res = await axios.post(`${API_BASE}/fhir/generate-bundle`, payload);
       setBundle(res.data);
+      // Pre-fetch aligned patient report data
+      fetchPatientReportData();
     } catch (err) {
       console.error('Failed to generate bundle:', err);
+      const errDetail = err.response?.data?.detail || 'Failed to generate FHIR Bundle.';
+      alert(`FHIR Bundle Policy Warning: ${errDetail}`);
     } finally {
       setBundleLoading(false);
+    }
+  };
+
+  const fetchPatientReportData = async () => {
+    if (!selectedCandidate) return null;
+    if (!patient.first_name?.trim() || !patient.last_name?.trim() || !patient.birth_date?.trim()) {
+      alert('Please fill in required patient fields: First Name, Last Name, and Date of Birth.');
+      return null;
+    }
+    setReportLoading(true);
+    try {
+      const payload = {
+        patient,
+        namaste_code: pipelineData?.source_code || 'NAMC-AYU',
+        namaste_term: pipelineData?.source_term || searchQuery,
+        candidate: selectedCandidate,
+        pipeline_data: pipelineData
+      };
+      const res = await axios.post(`${API_BASE}/reports/patient-mapping`, payload);
+      setReportData(res.data);
+      return res.data;
+    } catch (err) {
+      console.error('Failed to generate patient report:', err);
+      const errDetail = err.response?.data?.detail || 'Failed to generate patient mapping report.';
+      alert(`Report Generation Notice: ${errDetail}`);
+      return null;
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleViewPatientReport = async () => {
+    const data = reportData || (await fetchPatientReportData());
+    if (data) {
+      setReportModalOpen(true);
+    }
+  };
+
+  const handleDownloadPatientReportPdf = async () => {
+    const data = reportData || (await fetchPatientReportData());
+    if (data) {
+      generateAndDownloadPatientReportPdf(data);
     }
   };
 
@@ -130,7 +189,7 @@ export default function App() {
             className={`nav-tab-btn ${activeTab === 'review' ? 'active' : ''}`}
             onClick={() => setActiveTab('review')}
           >
-            <Shield size={18} /> Expert Review & Audit
+            <Shield size={18} /> Audit Trail & Admin Overrides
           </button>
           <button
             className={`nav-tab-btn ${activeTab === 'fhir' ? 'active' : ''}`}
@@ -177,36 +236,72 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {/* Candidate Selection Bar */}
               <div className="glass-panel" style={{ padding: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-                  Candidate ICD-11 Matches ({pipelineData.candidates.length}) for "{pipelineData.source_term}"
-                </h4>
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  {pipelineData.candidates.map((cand, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedCandidate(cand)}
-                      style={{
-                        padding: '0.65rem 1rem',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        border: selectedCandidate === cand ? '2px solid #3b82f6' : '1px solid var(--surface-border)',
-                        background: selectedCandidate === cand ? 'rgba(59, 130, 246, 0.2)' : 'rgba(15, 23, 42, 0.5)',
-                        color: '#f8fafc',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        fontWeight: 500
-                      }}
-                    >
-                      <span>{cand.term}</span>
-                      <span style={{ fontSize: '0.75rem', color: '#93c5fd' }}>({(cand.confidence * 100).toFixed(0)}%)</span>
-                    </button>
-                  ))}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0 }}>
+                    Candidate ICD-11 Matches ({pipelineData.candidates?.length || 0}) for "{pipelineData.source_term}"
+                  </h4>
+                  {pipelineData.decision_class && (
+                    <span className={`badge ${pipelineData.decision_class === 'AUTO_ACCEPTED' ? 'badge-high' : pipelineData.decision_class === 'AMBIGUOUS' ? 'badge-ambiguous' : 'badge-low'}`}>
+                      Policy: {pipelineData.decision_class}
+                    </span>
+                  )}
                 </div>
+
+                {(!pipelineData.candidates || pipelineData.candidates.length === 0) ? (
+                  <div style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '6px', color: '#fca5a5', fontSize: '0.9rem' }}>
+                    <strong>Status: UNMAPPED</strong> — No reliable ICD-11 candidates satisfied the retrieval or ontology gate criteria for "{pipelineData.source_term}". No fake codes fabricated.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    {pipelineData.candidates.map((cand, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedCandidate(cand)}
+                        style={{
+                          padding: '0.65rem 1rem',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          border: selectedCandidate === cand ? '2px solid #3b82f6' : '1px solid var(--surface-border)',
+                          background: selectedCandidate === cand ? 'rgba(59, 130, 246, 0.2)' : 'rgba(15, 23, 42, 0.5)',
+                          color: '#f8fafc',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontWeight: 500
+                        }}
+                      >
+                        <span>{cand.term}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#93c5fd' }}>({(cand.confidence * 100).toFixed(0)}%)</span>
+                        {cand.decision && (
+                          <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', background: cand.decision === 'AUTO_ACCEPTED' ? '#065f46' : 'rgba(255,255,255,0.1)' }}>
+                            {cand.decision}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Explainability & Grounding Details for Selected Candidate */}
-              <ExplainabilityCard candidate={selectedCandidate} sourceTerm={pipelineData.source_term} />
+              {selectedCandidate && (
+                <ExplainabilityCard
+                  candidate={selectedCandidate}
+                  sourceTerm={pipelineData.source_term}
+                  decisionReason={pipelineData.decision_reason}
+                  fhirAllowed={pipelineData.fhir_generation_allowed}
+                />
+              )}
+
+              {/* AI-Powered Evidence-Grounded Care Suggestions */}
+              {selectedCandidate && (
+                <CareSuggestionsCard
+                  candidate={selectedCandidate}
+                  sourceTerm={pipelineData.source_term}
+                  decisionClass={pipelineData.decision_class}
+                  initialCareSuggestions={pipelineData.care_suggestions}
+                />
+              )}
             </div>
           )}
         </div>
@@ -269,7 +364,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ marginTop: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <button
                 className="primary-btn"
                 disabled={bundleLoading || !selectedCandidate}
@@ -277,6 +372,25 @@ export default function App() {
               >
                 <FileJson size={18} /> {bundleLoading ? 'Generating Bundle...' : 'Generate FHIR R4 Bundle'}
               </button>
+
+              <button
+                className="primary-btn"
+                disabled={reportLoading || !selectedCandidate}
+                onClick={handleViewPatientReport}
+                style={{ background: 'linear-gradient(135deg, #0284c7, #0ea5e9)' }}
+              >
+                <FileText size={18} /> {reportLoading ? 'Loading Report...' : 'View Patient Report'}
+              </button>
+
+              <button
+                className="primary-btn"
+                disabled={reportLoading || !selectedCandidate}
+                onClick={handleDownloadPatientReportPdf}
+                style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}
+              >
+                <Printer size={18} /> Download Patient Mapping Report (PDF)
+              </button>
+
               {!selectedCandidate && (
                 <span style={{ fontSize: '0.85rem', color: '#f59e0b' }}>
                   Please run a search in Tab 1 first to select a verified mapping.
@@ -284,6 +398,39 @@ export default function App() {
               )}
             </div>
           </div>
+
+          {/* Patient Mapping Report Quick Status Card */}
+          {reportData && (
+            <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid #0284c7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#38bdf8', textTransform: 'uppercase', fontWeight: 700 }}>
+                  Clinical Documentation Ready
+                </div>
+                <h4 style={{ fontSize: '1.05rem', color: '#f8fafc', margin: '0.2rem 0' }}>
+                  {reportData.report_title} ({reportData.report_id})
+                </h4>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                  Patient: <strong>{reportData.patient?.full_name}</strong> • Source: <strong>{reportData.original_ayurveda_diagnosis?.condition_name}</strong> &rarr; Target: <strong>{reportData.mapped_icd11_concept?.target_code} ({reportData.mapped_icd11_concept?.target_title})</strong>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  className="nav-tab-btn"
+                  onClick={handleViewPatientReport}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#38bdf8' }}
+                >
+                  <FileText size={16} /> View 10-Section Report
+                </button>
+                <button
+                  className="primary-btn"
+                  onClick={handleDownloadPatientReportPdf}
+                  style={{ padding: '0.45rem 0.85rem', fontSize: '0.85rem', background: 'linear-gradient(135deg, #059669, #10b981)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <Printer size={16} /> Save / Print PDF
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* FHIR Bundle JSON Viewer */}
           {bundle && (
@@ -309,6 +456,15 @@ export default function App() {
 
       {/* TAB 4: Research Dashboard (B1 - B6, A1 - A5) */}
       {activeTab === 'research' && <ResearchDashboard />}
+
+      {/* Patient Report Modal View */}
+      {reportModalOpen && (
+        <PatientReportModal
+          reportData={reportData}
+          onClose={() => setReportModalOpen(false)}
+          onDownloadPdf={() => generateAndDownloadPatientReportPdf(reportData)}
+        />
+      )}
     </div>
   );
 }

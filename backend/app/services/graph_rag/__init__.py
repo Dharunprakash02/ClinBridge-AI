@@ -10,6 +10,9 @@ from backend.app.services.graph_rag.context_builder import (
 from backend.app.services.graph_rag.grounded_explanation import (
     GroundedExplanationGenerator, GroundedExplanationResult, grounded_explanation_generator
 )
+from backend.app.services.graph_rag.care_suggestions_service import (
+    CareSuggestionsService, CareSuggestion, CareSuggestionsResponse, care_suggestions_service
+)
 
 __all__ = [
     "EvidenceStore",
@@ -24,4 +27,8 @@ __all__ = [
     "GroundedExplanationGenerator",
     "GroundedExplanationResult",
     "grounded_explanation_generator",
+    "CareSuggestionsService",
+    "CareSuggestion",
+    "CareSuggestionsResponse",
+    "care_suggestions_service",
 ]

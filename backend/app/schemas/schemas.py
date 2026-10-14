@@ -11,6 +11,8 @@ class GenerateBundleRequest(BaseModel):
     patient: PatientData
     namaste_code: str
     namaste_term: Optional[str] = None
+    selected_candidate_code: Optional[str] = None
+    force_unverified: Optional[bool] = False
 
 class ProposedMappingResponse(BaseModel):
     id: int
@@ -46,20 +48,55 @@ class CandidateMappingOutput(BaseModel):
     decision: str
     graph_context: Optional[Dict[str, Any]] = None
     evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    influencing_graph_relations: List[str] = Field(default_factory=list)
     explanation: str
+
+class CareSuggestionOutput(BaseModel):
+    suggestion_id: str
+    type: str
+    title: str
+    explanation: str
+    relevance: str
+    source_title: str
+    publisher: str
+    source_url: str
+    evidence_excerpt: str
+    evidence_status: str = "SUPPORTED"
+    limitations: str
+
+class CareSuggestionsOutputResponse(BaseModel):
+    status: str
+    source_term: str
+    mapped_code: Optional[str] = None
+    mapped_title: Optional[str] = None
+    decision_class: str
+    safety_disclaimer: str
+    reason_or_limitation: Optional[str] = None
+    suggestions: List[CareSuggestionOutput] = Field(default_factory=list)
 
 class MappingPipelineResponse(BaseModel):
     source_term: str
     source_code: Optional[str] = None
-    requires_review: bool
     decision_class: str
+    decision_reason: str
+    requires_review: bool
+    fhir_generation_allowed: bool
+    influencing_factors: List[str] = Field(default_factory=list)
     candidates: List[CandidateMappingOutput]
+    care_suggestions: Optional[CareSuggestionsOutputResponse] = None
 
 class ExplainRequest(BaseModel):
     source_term: str
     source_code: Optional[str] = None
     candidate_code: str
     candidate_title: str
+
+class CareSuggestionsRequest(BaseModel):
+    source_term: str
+    candidate_code: Optional[str] = None
+    candidate_title: Optional[str] = None
+    decision_class: Optional[str] = "AUTO_ACCEPTED"
+    graph_context: Optional[Dict[str, Any]] = None
 
 class ReviewMappingRequest(BaseModel):
     source_term: str
@@ -71,3 +108,10 @@ class ReviewMappingRequest(BaseModel):
     confidence: Optional[float] = None
     decision_class: Optional[str] = None
     evidence_used: Optional[str] = None
+
+class PatientReportRequest(BaseModel):
+    patient: Dict[str, Any]
+    namaste_term: str
+    namaste_code: Optional[str] = None
+    candidate: Optional[Dict[str, Any]] = None
+    pipeline_data: Optional[Dict[str, Any]] = None

@@ -18,8 +18,9 @@ class EvidenceRecord(BaseModel):
 
 class EvidenceStore:
     """
-    In-memory / persistent Evidence Store supporting provenance-tracked clinical literature
+    Evidence Store supporting provenance-tracked clinical literature
     and retrieval by concept IDs and keyword matching.
+    Guarantees that unverified or missing records return 0.0 support rather than false positive defaults.
     """
 
     def __init__(self, json_path: Optional[str] = None):
@@ -43,34 +44,85 @@ class EvidenceStore:
     def retrieve_by_concepts(self, concepts: List[str]) -> List[EvidenceRecord]:
         if not concepts:
             return []
-        lower_concepts = [c.lower() for c in concepts]
+        lower_concepts = [c.lower().strip() for c in concepts if c and len(c.strip()) > 1]
         matched = []
         for record in self.evidence_list:
-            rec_concepts = [rc.lower() for rc in record.concept_ids]
-            if any(c in rec_concepts or any(c in rc for rc in rec_concepts) for c in lower_concepts):
+            rec_concepts = [rc.lower().strip() for rc in record.concept_ids]
+            # Exact concept or sub-token match
+            if any(c in rec_concepts or any(c == rc for rc in rec_concepts) for c in lower_concepts):
                 matched.append(record)
         return matched
 
-    def retrieve_by_text(self, query: str, limit: int = 3) -> List[EvidenceRecord]:
-        if not query:
+    def retrieve_by_candidate_support(self, source_term: str, candidate_title: str, candidate_code: Optional[str] = None) -> List[EvidenceRecord]:
+        """
+        Retrieves evidence specifically supporting the candidate association with the source.
+        Does not return spurious ungrounded matches.
+        """
+        query_concepts = [source_term]
+        if candidate_code:
+            query_concepts.append(candidate_code)
+        
+        # 1. Concept ID match
+        concept_matches = self.retrieve_by_concepts(query_concepts)
+        if concept_matches:
+            return concept_matches
+
+        # 2. Textual overlap match (requires meaningful overlap with both source and candidate terms)
+        query_words = set(w.lower() for w in f"{source_term} {candidate_title}".split() if len(w) > 3)
+        if not query_words:
             return []
-        query_words = set(query.lower().split())
-        scored_records = []
+
+        scored = []
         for record in self.evidence_list:
-            text_words = set(record.text.lower().split()).union(set(record.title.lower().split()))
+            text_words = set(w.lower() for w in f"{record.title} {record.text}".split() if len(w) > 3)
             overlap = len(query_words.intersection(text_words))
-            if overlap > 0:
-                scored_records.append((overlap, record))
+            if overlap >= 2:  # Must have substantive multi-token overlap
+                scored.append((overlap, record))
 
-        scored_records.sort(key=lambda x: x[0], reverse=True)
-        return [r for _, r in scored_records[:limit]]
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [r for _, r in scored[:3]]
 
-    def calculate_evidence_support_score(self, source_term: str, candidate_title: str) -> float:
-        combined_query = f"{source_term} {candidate_title}"
-        matched = self.retrieve_by_text(combined_query, limit=2)
+    def calculate_evidence_support_score(self, source_term: str, candidate_title: str, candidate_code: Optional[str] = None) -> float:
+        """
+        Computes evidence support score:
+        Returns 0.0 if no relevant literature is retrieved.
+        Never fabricates a default non-zero baseline.
+        """
+        matched = self.retrieve_by_candidate_support(source_term, candidate_title, candidate_code)
         if not matched:
-            return 0.4  # Neutral fallback when no specific text snippet found
-        return min(1.0, 0.6 + (len(matched) * 0.18))
+            return 0.0  # Zero support when no traceable evidence found
+        
+        # Genuine score based on number and depth of matched documents
+        support = min(1.0, 0.50 + (len(matched) * 0.20))
+        return round(support, 4)
+
+    def retrieve_care_evidence(
+        self,
+        source_term: str,
+        candidate_title: str,
+        candidate_code: Optional[str] = None,
+        graph_symptoms: Optional[List[str]] = None
+    ) -> List[EvidenceRecord]:
+        """
+        Retrieves authentic clinical guidelines and reference evidence specifically
+        applicable to care guidance, self-care, and triage/warning signs.
+        """
+        search_terms = [source_term, candidate_title]
+        if candidate_code:
+            search_terms.append(candidate_code)
+        if graph_symptoms:
+            search_terms.extend(graph_symptoms)
+
+        matched = self.retrieve_by_concepts(search_terms)
+        
+        # Textual keyword overlap match if needed
+        query_words = set(w.lower() for term in search_terms for w in term.split() if len(w) > 3)
+        for record in self.evidence_list:
+            if record not in matched:
+                text_words = set(w.lower() for w in f"{record.title} {record.text}".split() if len(w) > 3)
+                if len(query_words.intersection(text_words)) >= 2:
+                    matched.append(record)
+        return matched
 
 # Global singleton instance
 evidence_store = EvidenceStore()

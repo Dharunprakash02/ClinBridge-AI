@@ -1,0 +1,122 @@
+[
+  {
+    "id": "GT-01",
+    "source_code": "SR11",
+    "source_term": "Jwara",
+    "definition": "Characterized by santapa (fever/heat), restlessness, and elevated body temperature.",
+    "ground_truth_target_code": "MG26",
+    "ground_truth_target_title": "Symptoms or signs involving the body temperature",
+    "expected_decision": "AUTO_ACCEPTED",
+    "category": "Febrile / Pyrexia"
+  },
+  {
+    "id": "GT-02",
+    "source_code": "SL41",
+    "source_term": "kAsaH",
+    "definition": "Reflex violent respiratory cough response with throat irritation.",
+    "ground_truth_target_code": "MD30",
+    "ground_truth_target_title": "Cough",
+    "expected_decision": "AUTO_ACCEPTED",
+    "category": "Respiratory"
+  },
+  {
+    "id": "GT-03",
+    "source_code": "SL42",
+    "source_term": "SvAsaH",
+    "definition": "Difficult breathing, breathlessness, and bronchial obstruction.",
+    "ground_truth_target_code": "MD11",
+    "ground_truth_target_title": "Dyspnoea",
+    "expected_decision": "AUTO_ACCEPTED",
+    "category": "Respiratory"
+  },
+  {
+    "id": "GT-04",
+    "source_code": "SM8D",
+    "source_term": "pramehaH",
+    "definition": "Turbid frequent urination, thirst, debility, and metabolic derangement.",
+    "ground_truth_target_code": "5A10",
+    "ground_truth_target_title": "Diabetes mellitus or metabolic syndrome pattern",
+    "expected_decision": "AUTO_ACCEPTED",
+    "category": "Metabolic"
+  },
+  {
+    "id": "GT-05",
+    "source_code": "AAB-51",
+    "source_term": "amavAta",
+    "definition": "Severe joint pain, swelling, stiffness, and inflammatory polyarthritis.",
+    "ground_truth_target_code": "FA20",
+    "ground_truth_target_title": "Rheumatoid arthritis or inflammatory joint pattern",
+    "expected_decision": "AUTO_ACCEPTED",
+    "category": "Musculoskeletal"
+  },
+  {
+    "id": "GT-06",
+    "source_code": "ABB-13",
+    "source_term": "kAmalA",
+    "definition": "Yellow discoloration of sclera and skin, hepatic dysfunction, deep yellow urine.",
+    "ground_truth_target_code": "DB90",
+    "ground_truth_target_title": "Hepatic failure or jaundice pattern",
+    "expected_decision": "AUTO_ACCEPTED",
+    "category": "Hepatic"
+  },
+  {
+    "id": "GT-07",
+    "source_code": "AA",
+    "source_term": "vAtavyAdhiH",
+    "definition": "Primary neuro-motor disorders, tremors, numbness, and musculoskeletal pain.",
+    "ground_truth_target_code": "8E40",
+    "ground_truth_target_title": "Disorders of the nervous system or Vata pattern",
+    "expected_decision": "AUTO_ACCEPTED",
+    "category": "Neurological"
+  },
+  {
+    "id": "GT-08",
+    "source_code": "EB-2.7",
+    "source_term": "atisAra",
+    "definition": "Frequent loose watery stools, abdominal cramps, and dehydration.",
+    "ground_truth_target_code": "DD91",
+    "ground_truth_target_title": "Diarrhoea or gastroenteritis pattern",
+    "expected_decision": "AUTO_ACCEPTED",
+    "category": "Gastrointestinal"
+  },
+  {
+    "id": "GT-09",
+    "source_code": "ED-4.3",
+    "source_term": "kuShTha",
+    "definition": "Chronic skin lesions, pruritus, depigmentation, and cutaneous eruptions.",
+    "ground_truth_target_code": "EA80",
+    "ground_truth_target_title": "Dermatological disease pattern",
+    "expected_decision": "AUTO_ACCEPTED",
+    "category": "Dermatology"
+  },
+  {
+    "id": "GT-10",
+    "source_code": "INCOMPAT-01",
+    "source_term": "Jwara (acute febrile)",
+    "definition": "Acute body heat and pyrexia.",
+    "ground_truth_target_code": "NC72",
+    "ground_truth_target_title": "Fracture of femur",
+    "expected_decision": "REJECTED",
+    "category": "Rule Validation Test (Trauma mismatch)"
+  },
+  {
+    "id": "GT-11",
+    "source_code": "AMBIG-01",
+    "source_term": "Shoola",
+    "definition": "Unspecified pain without anatomical qualification.",
+    "ground_truth_target_code": "MG30",
+    "ground_truth_target_title": "Pain, unspecified",
+    "expected_decision": "AMBIGUOUS",
+    "category": "Ambiguity Test"
+  },
+  {
+    "id": "GT-12",
+    "source_code": "RARE-01",
+    "source_term": "Abhyantarayama",
+    "definition": "Rare classical tetanic internal curvature spasm pattern.",
+    "ground_truth_target_code": "UNMAPPED",
+    "ground_truth_target_title": "No verified equivalent",
+    "expected_decision": "INSUFFICIENT_EVIDENCE",
+    "category": "Insufficient Evidence Test"
+  }
+]
