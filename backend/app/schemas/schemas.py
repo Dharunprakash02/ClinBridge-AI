@@ -12,7 +12,17 @@ class GenerateBundleRequest(BaseModel):
     namaste_code: str
     namaste_term: Optional[str] = None
     selected_candidate_code: Optional[str] = None
+    selected_candidate_title: Optional[str] = None
+    selected_candidate_uri: Optional[str] = None
     force_unverified: Optional[bool] = False
+    clinical_verification_status: Optional[str] = None
+
+class FhirBundleResponse(BaseModel):
+    bundle: Dict[str, Any]
+    structure_valid: bool
+    validation_errors: List[str] = Field(default_factory=list)
+    validation_warnings: List[str] = Field(default_factory=list)
+    validation_disclaimer: Optional[str] = None
 
 class ProposedMappingResponse(BaseModel):
     id: int
@@ -62,6 +72,11 @@ class CareSuggestionOutput(BaseModel):
     source_url: str
     evidence_excerpt: str
     evidence_status: str = "SUPPORTED"
+    url_verified: bool = True
+    claim_supported: bool = True
+    publication_info: Optional[str] = None
+    passage_location: Optional[str] = None
+    verification_notes: Optional[str] = None
     limitations: str
 
 class CareSuggestionsOutputResponse(BaseModel):

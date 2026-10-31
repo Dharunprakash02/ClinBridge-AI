@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Search,
@@ -12,7 +12,9 @@ import {
   Copy,
   Download,
   FileText,
-  Printer
+  Printer,
+  Sun,
+  Moon
 } from 'lucide-react';
 import PipelineVisualizer from './components/PipelineVisualizer';
 import ExplainabilityCard from './components/ExplainabilityCard';
@@ -26,6 +28,19 @@ import './index.css';
 const API_BASE = 'http://127.0.0.1:8000/api/v1';
 
 export default function App() {
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('clinbridge_theme') || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('clinbridge_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   const [activeTab, setActiveTab] = useState('search'); // 'search' | 'review' | 'fhir' | 'research'
 
   // Search & Pipeline state
@@ -45,6 +60,7 @@ export default function App() {
   });
   const [bundle, setBundle] = useState(null);
   const [bundleLoading, setBundleLoading] = useState(false);
+  const [bundleValidation, setBundleValidation] = useState(null);
   const [copied, setCopied] = useState(false);
 
   // Patient Mapping Report state
@@ -93,10 +109,21 @@ export default function App() {
         namaste_code: pipelineData?.source_code || 'NAMC-AYU',
         namaste_term: pipelineData?.source_term || searchQuery,
         selected_candidate_code: selectedCandidate?.code,
+        selected_candidate_title: selectedCandidate?.term || selectedCandidate?.title,
+        selected_candidate_uri: selectedCandidate?.uri,
         force_unverified: false
       };
       const res = await axios.post(`${API_BASE}/fhir/generate-bundle`, payload);
-      setBundle(res.data);
+      const bundleData = res.data?.bundle || res.data;
+      setBundle(bundleData);
+      if (res.data?.structure_valid !== undefined) {
+        setBundleValidation({
+          isValid: res.data.structure_valid,
+          errors: res.data.validation_errors || [],
+          warnings: res.data.validation_warnings || [],
+          disclaimer: res.data.validation_disclaimer
+        });
+      }
       // Pre-fetch aligned patient report data
       fetchPatientReportData();
     } catch (err) {
@@ -172,8 +199,35 @@ export default function App() {
     <div className="app-container">
       {/* Header */}
       <header>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.65rem', borderRadius: '9999px', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--accent-color)', border: '1px solid var(--surface-border)' }}>
+              v2.0.0 • AYUSH &harr; WHO ICD-11
+            </span>
+          </div>
+
+          <button
+            onClick={toggleTheme}
+            className="theme-toggle-btn"
+            aria-label="Toggle theme"
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun size={16} className="theme-icon sun" />
+                <span>Light Theme</span>
+              </>
+            ) : (
+              <>
+                <Moon size={16} className="theme-icon moon" />
+                <span>Dark Theme</span>
+              </>
+            )}
+          </button>
+        </div>
+
         <h1>
-          <Stethoscope size={36} color="#60a5fa" /> ClinBridge AI
+          <Stethoscope size={36} color={theme === 'dark' ? '#60a5fa' : '#2563eb'} /> ClinBridge AI
         </h1>
         <p>Context-Aware, Evidence-Grounded Ayurveda/NAMASTE &rarr; ICD-11 Interoperability Platform</p>
 
@@ -262,8 +316,8 @@ export default function App() {
                           borderRadius: '8px',
                           cursor: 'pointer',
                           border: selectedCandidate === cand ? '2px solid #3b82f6' : '1px solid var(--surface-border)',
-                          background: selectedCandidate === cand ? 'rgba(59, 130, 246, 0.2)' : 'rgba(15, 23, 42, 0.5)',
-                          color: '#f8fafc',
+                          background: selectedCandidate === cand ? 'rgba(59, 130, 246, 0.2)' : 'var(--surface-card)',
+                          color: 'var(--text-primary)',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.5rem',
@@ -271,9 +325,17 @@ export default function App() {
                         }}
                       >
                         <span>{cand.term}</span>
-                        <span style={{ fontSize: '0.75rem', color: '#93c5fd' }}>({(cand.confidence * 100).toFixed(0)}%)</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--accent-color)', fontWeight: 600 }}>({(cand.confidence * 100).toFixed(0)}%)</span>
                         {cand.decision && (
-                          <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', background: cand.decision === 'AUTO_ACCEPTED' ? '#065f46' : 'rgba(255,255,255,0.1)' }}>
+                          <span style={{
+                            fontSize: '0.68rem',
+                            padding: '0.15rem 0.45rem',
+                            borderRadius: '4px',
+                            fontWeight: 700,
+                            background: cand.decision === 'AUTO_ACCEPTED' ? 'var(--badge-selfcare-bg)' : 'var(--badge-triage-bg)',
+                            color: cand.decision === 'AUTO_ACCEPTED' ? 'var(--badge-selfcare-text)' : 'var(--badge-triage-text)',
+                            border: `1px solid ${cand.decision === 'AUTO_ACCEPTED' ? 'var(--badge-selfcare-border)' : 'var(--badge-triage-border)'}`
+                          }}>
                             {cand.decision}
                           </span>
                         )}
@@ -323,7 +385,7 @@ export default function App() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Patient Demographic Form */}
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
-            <h3 style={{ fontSize: '1.2rem', color: '#f8fafc', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <FileJson size={20} color="#38bdf8" /> Patient Encounter & FHIR Parameters
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
@@ -406,7 +468,7 @@ export default function App() {
                 <div style={{ fontSize: '0.75rem', color: '#38bdf8', textTransform: 'uppercase', fontWeight: 700 }}>
                   Clinical Documentation Ready
                 </div>
-                <h4 style={{ fontSize: '1.05rem', color: '#f8fafc', margin: '0.2rem 0' }}>
+                <h4 style={{ fontSize: '1.05rem', color: 'var(--text-primary)', margin: '0.2rem 0' }}>
                   {reportData.report_title} ({reportData.report_id})
                 </h4>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
@@ -435,10 +497,27 @@ export default function App() {
           {/* FHIR Bundle JSON Viewer */}
           {bundle && (
             <div className="glass-panel" style={{ padding: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <h3 style={{ fontSize: '1.1rem', color: '#34d399' }}>
-                  FHIR R4 Transaction Bundle (Valid JSON)
-                </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <h3 style={{ fontSize: '1.1rem', color: '#34d399', margin: 0 }}>
+                    FHIR R4 Transaction Bundle (Standard JSON)
+                  </h3>
+                  {bundleValidation && (
+                    <span
+                      style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '4px',
+                        background: bundleValidation.isValid ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                        color: bundleValidation.isValid ? '#34d399' : '#f87171',
+                        border: `1px solid ${bundleValidation.isValid ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                      }}
+                    >
+                      {bundleValidation.isValid ? 'HL7 FHIR R4 Compliant' : 'Validation Error'}
+                    </span>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button className="nav-tab-btn" onClick={copyBundleJson}>
                     <Copy size={15} /> {copied ? 'Copied!' : 'Copy JSON'}

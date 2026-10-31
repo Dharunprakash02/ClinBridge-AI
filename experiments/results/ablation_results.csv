@@ -1,6 +1,6 @@
-id,removed_component,top1_accuracy,performance_drop
-A1,Without Knowledge Graph,0.8333,-0.0834
-A2,Without GraphRAG Evidence,0.8333,-0.0834
-A3,Without Rule Gate,0.8333,-0.0834
-A4,Without Uncertainty Layer,0.8333,-0.0834
-A5,Without Hybrid Retrieval (Lexical Only),0.0833,-0.8334
+id,name,removed_component,status,top1_accuracy,performance_drop,performance_drop_pp,sample_count,description
+A1,Full Model Baseline,None (Full Model Baseline),EVALUATED,0.9167,0.0,0.0,12,"Complete ClinBridge AI multi-signal pipeline with Lexical, Semantic, Knowledge Graph, GraphRAG Evidence, Rule Gate, and Uncertainty Engine."
+A2,Full Model w/o Knowledge Graph,Knowledge Graph Contribution,EVALUATED,0.8333,0.0834,8.34,12,Isolates the system without Knowledge Graph contribution. Disables graph-guided symptom and dosha consistency scoring.
+A3,Full Model w/o GraphRAG Evidence,GraphRAG Evidence Retrieval,EVALUATED,0.8333,0.0834,8.34,12,Isolates the system without GraphRAG evidence retrieval. Disables verified medical literature grounding and PubMed/WHO provenance scoring.
+A4,Full Model w/o Rule Gate,Clinical Rule Gate,EVALUATED,0.8333,0.0834,8.34,12,"Isolates the system without the clinical rule validation gate. Bypasses anatomical, trauma, oncology, and cross-category compatibility constraints."
+A5,Full Model w/o Uncertainty Component,Uncertainty-Aware Decision Component,EVALUATED,0.8333,0.0834,8.34,12,"Isolates the system without the uncertainty-aware decision engine. Disables confidence calibration, margin checks, ambiguity escalation, and evidence sufficiency gates (blind argmax)."

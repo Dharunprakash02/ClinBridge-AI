@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from backend.app.services.graph_rag.evidence_store import evidence_store, EvidenceStore, EvidenceRecord
 from backend.app.services.knowledge_graph import graph_query_service, GraphQueryService
+from backend.app.services.graph_rag.evidence_verifier import is_url_verified, verify_claim_support
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,12 @@ class CareSuggestion(BaseModel):
     publisher: str
     source_url: str
     evidence_excerpt: str
-    evidence_status: str = "SUPPORTED"
+    evidence_status: str = "SUPPORTED"  # "SUPPORTED" | "UNVERIFIED"
+    url_verified: bool = True
+    claim_supported: bool = True
+    publication_info: Optional[str] = None
+    passage_location: Optional[str] = None
+    verification_notes: Optional[str] = None
     limitations: str
 
 class CareSuggestionsResponse(BaseModel):
@@ -41,6 +47,9 @@ class CareSuggestionsService:
       - Does not prescribe medications or dosages.
       - Withholds condition-specific advice when mapping is ambiguous, rejected, or unmapped.
       - Never fabricates citations; every suggestion cites authentic retrievable evidence.
+      - Evaluates evidence separately for each suggestion (no spurious reused quotes).
+      - Verifies destination URLs against publisher registry/live status.
+      - Excludes unsafe advice such as hot-water steam inhalation due to burn/scalding risk.
     """
 
     SAFETY_DISCLAIMER = (
@@ -98,15 +107,24 @@ class CareSuggestionsService:
             if kg_obj:
                 symptoms = kg_obj.symptoms
 
-        # 3. Retrieve Authentic Clinical Literature Evidence
-        evidence_records = self.store.retrieve_care_evidence(
+        # 3. Retrieve Authentic Clinical Literature Evidence Separately by Claim Type
+        self_care_evidence = self.store.retrieve_care_evidence(
             source_term=source_term,
             candidate_title=candidate_title or source_term,
             candidate_code=candidate_code,
-            graph_symptoms=symptoms
+            graph_symptoms=symptoms,
+            claim_type="SELF_CARE_GUIDANCE"
         )
 
-        if not evidence_records:
+        warning_evidence = self.store.retrieve_care_evidence(
+            source_term=source_term,
+            candidate_title=candidate_title or source_term,
+            candidate_code=candidate_code,
+            graph_symptoms=symptoms,
+            claim_type="WARNING_SIGNS_AND_TRIAGE"
+        )
+
+        if not self_care_evidence and not warning_evidence:
             return CareSuggestionsResponse(
                 status="INSUFFICIENT_EVIDENCE",
                 source_term=source_term,
@@ -124,7 +142,7 @@ class CareSuggestionsService:
             candidate_code=candidate_code,
             candidate_title=candidate_title or source_term,
             symptoms=symptoms,
-            evidence_records=evidence_records
+            evidence_records=self_care_evidence or warning_evidence
         )
 
         s2 = self._build_warning_triage_suggestion(
@@ -132,7 +150,7 @@ class CareSuggestionsService:
             candidate_code=candidate_code,
             candidate_title=candidate_title or source_term,
             symptoms=symptoms,
-            evidence_records=evidence_records
+            evidence_records=warning_evidence or self_care_evidence
         )
 
         suggestions: List[CareSuggestion] = []
@@ -175,7 +193,7 @@ class CareSuggestionsService:
         """Synthesizes Suggestion 1: General Health Information & Evidence-Supported Self-Care."""
         # Find guideline emphasizing supportive care, hydration, rest, or protocol
         target_rec = next(
-            (r for r in evidence_records if any(k in r.text.lower() for k in ["supportive care", "hydration", "rest", "diet", "langhana", "fluid", "non-pharmacological"])),
+            (r for r in evidence_records if any(k in r.text.lower() for k in ["rest", "fluid", "hydration", "stay at home", "self-care", "supportive care", "mobility"])),
             evidence_records[0]
         )
 
@@ -192,13 +210,14 @@ class CareSuggestionsService:
                 f"Directly supports physiological temperature regulation in febrile episodes associated with {source_term}."
             )
         elif any(c in combined_lower for c in ["cough", "kasa", "kAsaH", "respiratory", "md30"]):
-            title = "Airway Humidification & Irritant Avoidance"
+            title = "Airway Rest & Adequate Fluid Hydration"
             explanation = (
-                f"For acute respiratory coughing reflex ({source_term} / ICD-11 {candidate_code}), guidelines support "
-                f"warm fluid hydration, mild steam inhalation, and avoidance of dry cold air and tobacco smoke."
+                f"For acute respiratory cough reflex ({source_term} / ICD-11 {candidate_code}), clinical guidelines emphasize "
+                f"getting adequate rest, drinking plenty of fluids to maintain hydration, and staying home when febrile or unwell. "
+                f"Routine hot-water steam inhalation is not recommended as standard self-care due to the significant risk of burns and scalds."
             )
             relevance = (
-                f"Reduces mechanical irritation of respiratory tract reflex pathways in {source_term}."
+                f"Directly supports airway recovery and reduces mechanical mucosal irritation in {source_term} without thermal burn risks."
             )
         elif any(d in combined_lower for d in ["dyspnoea", "shvasa", "breath", "md11"]):
             title = "Upright Postural Stabilization & Ventilation"
@@ -217,6 +236,11 @@ class CareSuggestionsService:
             )
             relevance = f"Aligned with baseline recovery principles for {candidate_title}."
 
+        # Verification check
+        url_valid = is_url_verified(target_rec.source_url) if target_rec.url_verified is not False else False
+        claim_valid = verify_claim_support("SELF_CARE_GUIDANCE", target_rec.text, candidate_code)
+        is_supported = url_valid and claim_valid
+
         return CareSuggestion(
             suggestion_id="sugg_1",
             type="SELF_CARE_GUIDANCE",
@@ -225,9 +249,14 @@ class CareSuggestionsService:
             relevance=relevance,
             source_title=target_rec.title,
             publisher=target_rec.source,
-            source_url=target_rec.source_url,
-            evidence_excerpt=target_rec.text[:280] + ("..." if len(target_rec.text) > 280 else ""),
-            evidence_status="SUPPORTED",
+            source_url=target_rec.source_url if url_valid else "",
+            publication_info=target_rec.publication_info or f"Published {target_rec.publication_year}",
+            passage_location=target_rec.passage_location or "General Clinical Section",
+            evidence_excerpt=target_rec.text,
+            evidence_status="SUPPORTED" if is_supported else "UNVERIFIED",
+            url_verified=url_valid,
+            claim_supported=claim_valid,
+            verification_notes=None if is_supported else "Source destination or claim support not verified",
             limitations="General health information; does not substitute for personalized medical diagnosis or treatment."
         )
 
@@ -242,7 +271,7 @@ class CareSuggestionsService:
         """Synthesizes Suggestion 2: Next Steps, Warning Signs (Red Flags) & Clinical Triage Guidance."""
         # Find guideline emphasizing referral, warning signs, red flags, or emergency triage
         target_rec = next(
-            (r for r in evidence_records if any(k in r.text.lower() for k in ["red flag", "warning sign", "referral", "immediate", "emergency", "severe", "physician assessment"])),
+            (r for r in evidence_records if any(k in r.text.lower() for k in ["red flag", "warning sign", "referral", "immediate", "emergency", "severe", "danger", "gp", "physician assessment"])),
             evidence_records[-1]
         )
 
@@ -258,13 +287,13 @@ class CareSuggestionsService:
                 f"Distinguishes uncomplicated febrile responses in {source_term} from critical systemic complications."
             )
         elif any(c in combined_lower for c in ["cough", "kasa", "kAsaH", "respiratory", "md30"]):
-            title = "Respiratory Red Flags & Clinical Triage Indicators"
+            title = "Respiratory Red Flags & Urgent Clinical Referral"
             explanation = (
-                f"Immediate medical assessment is required if the cough is accompanied by hemoptysis (blood in sputum), "
-                f"sharp pleuritic chest pain, progressive breathlessness, audible stridor, or persistence beyond three weeks."
+                f"Immediate medical assessment is required if the cough is accompanied by coughing up blood (hemoptysis), "
+                f"sharp chest pain, progressive breathlessness, feeling very unwell, or persistence beyond three weeks."
             )
             relevance = (
-                f"Identifies potential lower respiratory infections or airway obstructions requiring clinical diagnostics."
+                f"Identifies potential lower respiratory infections, tuberculosis, or airway obstructions requiring clinical diagnostics."
             )
         elif any(d in combined_lower for d in ["dyspnoea", "shvasa", "breath", "md11"]):
             title = "Emergency Triage Indicators for Respiratory Distress"
@@ -283,6 +312,11 @@ class CareSuggestionsService:
             )
             relevance = f"Safety protocol for early detection of disease progression in {candidate_title}."
 
+        # Verification check
+        url_valid = is_url_verified(target_rec.source_url) if target_rec.url_verified is not False else False
+        claim_valid = verify_claim_support("WARNING_SIGNS_AND_TRIAGE", target_rec.text, candidate_code)
+        is_supported = url_valid and claim_valid
+
         return CareSuggestion(
             suggestion_id="sugg_2",
             type="WARNING_SIGNS_AND_TRIAGE",
@@ -291,9 +325,14 @@ class CareSuggestionsService:
             relevance=relevance,
             source_title=target_rec.title,
             publisher=target_rec.source,
-            source_url=target_rec.source_url,
-            evidence_excerpt=target_rec.text[:280] + ("..." if len(target_rec.text) > 280 else ""),
-            evidence_status="SUPPORTED",
+            source_url=target_rec.source_url if url_valid else "",
+            publication_info=target_rec.publication_info or f"Published {target_rec.publication_year}",
+            passage_location=target_rec.passage_location or "General Clinical Section",
+            evidence_excerpt=target_rec.text,
+            evidence_status="SUPPORTED" if is_supported else "UNVERIFIED",
+            url_verified=url_valid,
+            claim_supported=claim_valid,
+            verification_notes=None if is_supported else "Source destination or claim support not verified",
             limitations="Triage guidance only; patients with severe or worsening distress must seek emergency medical care immediately."
         )
 

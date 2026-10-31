@@ -153,3 +153,95 @@ def test_mapping_pipeline_includes_care_suggestions():
             assert len(pipeline_output.care_suggestions.suggestions) == 2
     finally:
         db.close()
+
+def test_care_suggestions_source_links_verified_no_404():
+    """Confirms all generated care suggestion source URLs are valid, verified, and not returning 404."""
+    from backend.app.services.graph_rag.evidence_verifier import is_url_verified
+
+    for term, code, title in [
+        ("kAsaH", "MD30", "Cough"),
+        ("Jwara", "MG26", "Symptoms or signs involving the body temperature")
+    ]:
+        res = care_suggestions_service.generate_suggestions(
+            source_term=term,
+            candidate_code=code,
+            candidate_title=title,
+            decision_class="AUTO_ACCEPTED"
+        )
+        assert res.status == "SUCCESS"
+        for s in res.suggestions:
+            assert s.url_verified is True
+            assert s.evidence_status == "SUPPORTED"
+            assert s.source_url.startswith("https://")
+            # Verify URL is confirmed in our registry
+            assert is_url_verified(s.source_url) is True
+            # Never return the broken WHO-2019-nCoV-clinical-2024.1 URL
+            assert "WHO-2019-nCoV-clinical-2024.1" not in s.source_url
+
+def test_care_suggestions_no_steam_inhalation():
+    """Ensures unsafe hot-water steam inhalation advice is omitted from all suggestions."""
+    res = care_suggestions_service.generate_suggestions(
+        source_term="kAsaH",
+        candidate_code="MD30",
+        candidate_title="Cough",
+        decision_class="AUTO_ACCEPTED"
+    )
+    for s in res.suggestions:
+        assert "steam" not in s.title.lower()
+        # If steam is mentioned in explanation, it must only be warning against it or omitted
+        if "steam" in s.explanation.lower():
+            assert "not recommended" in s.explanation.lower() or "avoid" in s.explanation.lower()
+        assert "steam" not in s.evidence_excerpt.lower()
+
+def test_care_suggestions_distinct_quotations_and_sources():
+    """Ensures Suggestion 1 and Suggestion 2 retrieve distinct evidence and do not duplicate quotes."""
+    res = care_suggestions_service.generate_suggestions(
+        source_term="kAsaH",
+        candidate_code="MD30",
+        candidate_title="Cough",
+        decision_class="AUTO_ACCEPTED"
+    )
+    s1, s2 = res.suggestions[0], res.suggestions[1]
+    # Distinct quotes
+    assert s1.evidence_excerpt != s2.evidence_excerpt
+    # Distinct types
+    assert s1.type == "SELF_CARE_GUIDANCE"
+    assert s2.type == "WARNING_SIGNS_AND_TRIAGE"
+    # Specific claim support
+    assert "rest" in s1.evidence_excerpt.lower() or "fluids" in s1.evidence_excerpt.lower()
+    assert "urgent" in s2.evidence_excerpt.lower() or "blood" in s2.evidence_excerpt.lower() or "weeks" in s2.evidence_excerpt.lower()
+
+def test_care_suggestions_unverified_url_failure_handling():
+    """When a source record has an unverified or broken URL, the suggestion is marked UNVERIFIED with no active link."""
+    from backend.app.services.graph_rag.evidence_store import EvidenceRecord
+
+    unverified_rec = EvidenceRecord(
+        evidence_id="ev_broken_test",
+        title="Unverified Clinical Leaflet",
+        source="External Source",
+        document_type="Leaflet",
+        publication_year=2024,
+        source_url="https://www.who.int/publications/i/item/WHO-2019-nCoV-clinical-2024.1",  # Known 404
+        text="Supportive care involves rest and fluids.",
+        concept_ids=["MD30"],
+        url_verified=False,
+        claim_type="SELF_CARE_GUIDANCE"
+    )
+
+    empty_store = EvidenceStore()
+    empty_store.evidence_list = [unverified_rec]
+    service = CareSuggestionsService(store=empty_store)
+
+    sugg = service._build_self_care_suggestion(
+        source_term="kAsaH",
+        candidate_code="MD30",
+        candidate_title="Cough",
+        symptoms=["cough"],
+        evidence_records=[unverified_rec]
+    )
+
+    assert sugg is not None
+    assert sugg.url_verified is False
+    assert sugg.evidence_status == "UNVERIFIED"
+    assert sugg.source_url == ""
+

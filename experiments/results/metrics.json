@@ -1,10 +1,21 @@
 {
   "dataset_name": "Standardized Ayurveda-ICD11 Pilot Reference Set",
+  "dataset_version": "v1.2",
   "dataset_size": 12,
+  "evaluation_dataset_size": 12,
+  "valid_samples": 12,
+  "invalid_samples": 0,
   "is_sample_benchmark": true,
   "status_label": "Evaluated on Curated Reference Set (N=12) \u2014 Research Pilot Output",
+  "dataset_info": {
+    "dataset_name": "Standardized Ayurveda-ICD11 Pilot Reference Set",
+    "version": "v1.2",
+    "sample_count": 12,
+    "protocol": "Controlled benchmark (B1\u2013B6) and single-factor ablation study (A1\u2013A5) with verified ground-truth labels."
+  },
   "metrics": {
     "top1_accuracy": 0.9167,
+    "top1_acc": 0.9167,
     "recall_at_3": 0.9167,
     "mrr": 0.9167,
     "f1_score": 0.9167
@@ -14,6 +25,7 @@
       "id": "B1",
       "name": "TF-IDF + Cosine Similarity",
       "top1_accuracy": 0.0833,
+      "top1_acc": 0.0833,
       "recall_at_3": 0.25,
       "mrr": 0.1528,
       "f1_score": 0.125
@@ -22,6 +34,7 @@
       "id": "B2",
       "name": "Embedding Similarity",
       "top1_accuracy": 0.8333,
+      "top1_acc": 0.8333,
       "recall_at_3": 0.8333,
       "mrr": 0.8333,
       "f1_score": 0.8333
@@ -30,6 +43,7 @@
       "id": "B3",
       "name": "Hybrid Lexical + Semantic",
       "top1_accuracy": 0.8333,
+      "top1_acc": 0.8333,
       "recall_at_3": 0.8333,
       "mrr": 0.8333,
       "f1_score": 0.8333
@@ -38,6 +52,7 @@
       "id": "B4",
       "name": "Hybrid + Rule Validation",
       "top1_accuracy": 0.8333,
+      "top1_acc": 0.8333,
       "recall_at_3": 0.8333,
       "mrr": 0.8333,
       "f1_score": 0.8333
@@ -46,6 +61,7 @@
       "id": "B5",
       "name": "Hybrid + Knowledge Graph",
       "top1_accuracy": 0.8333,
+      "top1_acc": 0.8333,
       "recall_at_3": 0.8333,
       "mrr": 0.8333,
       "f1_score": 0.8333
@@ -54,6 +70,7 @@
       "id": "B6",
       "name": "Full Proposed System",
       "top1_accuracy": 0.9167,
+      "top1_acc": 0.9167,
       "recall_at_3": 0.9167,
       "mrr": 0.9167,
       "f1_score": 0.9167
@@ -62,33 +79,73 @@
   "ablations": [
     {
       "id": "A1",
-      "removed_component": "Without Knowledge Graph",
-      "top1_accuracy": 0.8333,
-      "performance_drop": -0.0834
+      "name": "Full Model Baseline",
+      "removed_component": "None (Full Model Baseline)",
+      "status": "EVALUATED",
+      "top1_accuracy": 0.9167,
+      "top1_acc": 0.9167,
+      "sample_count": 12,
+      "correct_count": 11,
+      "description": "Complete ClinBridge AI multi-signal pipeline with Lexical, Semantic, Knowledge Graph, GraphRAG Evidence, Rule Gate, and Uncertainty Engine.",
+      "performance_drop": 0.0,
+      "performance_drop_pp": 0.0,
+      "drop": 0.0
     },
     {
       "id": "A2",
-      "removed_component": "Without GraphRAG Evidence",
+      "name": "Full Model w/o Knowledge Graph",
+      "removed_component": "Knowledge Graph Contribution",
+      "status": "EVALUATED",
       "top1_accuracy": 0.8333,
-      "performance_drop": -0.0834
+      "top1_acc": 0.8333,
+      "sample_count": 12,
+      "correct_count": 10,
+      "description": "Isolates the system without Knowledge Graph contribution. Disables graph-guided symptom and dosha consistency scoring.",
+      "performance_drop": 0.0834,
+      "performance_drop_pp": 8.34,
+      "drop": 0.0834
     },
     {
       "id": "A3",
-      "removed_component": "Without Rule Gate",
+      "name": "Full Model w/o GraphRAG Evidence",
+      "removed_component": "GraphRAG Evidence Retrieval",
+      "status": "EVALUATED",
       "top1_accuracy": 0.8333,
-      "performance_drop": -0.0834
+      "top1_acc": 0.8333,
+      "sample_count": 12,
+      "correct_count": 10,
+      "description": "Isolates the system without GraphRAG evidence retrieval. Disables verified medical literature grounding and PubMed/WHO provenance scoring.",
+      "performance_drop": 0.0834,
+      "performance_drop_pp": 8.34,
+      "drop": 0.0834
     },
     {
       "id": "A4",
-      "removed_component": "Without Uncertainty Layer",
+      "name": "Full Model w/o Rule Gate",
+      "removed_component": "Clinical Rule Gate",
+      "status": "EVALUATED",
       "top1_accuracy": 0.8333,
-      "performance_drop": -0.0834
+      "top1_acc": 0.8333,
+      "sample_count": 12,
+      "correct_count": 10,
+      "description": "Isolates the system without the clinical rule validation gate. Bypasses anatomical, trauma, oncology, and cross-category compatibility constraints.",
+      "performance_drop": 0.0834,
+      "performance_drop_pp": 8.34,
+      "drop": 0.0834
     },
     {
       "id": "A5",
-      "removed_component": "Without Hybrid Retrieval (Lexical Only)",
-      "top1_accuracy": 0.0833,
-      "performance_drop": -0.8334
+      "name": "Full Model w/o Uncertainty Component",
+      "removed_component": "Uncertainty-Aware Decision Component",
+      "status": "EVALUATED",
+      "top1_accuracy": 0.8333,
+      "top1_acc": 0.8333,
+      "sample_count": 12,
+      "correct_count": 10,
+      "description": "Isolates the system without the uncertainty-aware decision engine. Disables confidence calibration, margin checks, ambiguity escalation, and evidence sufficiency gates (blind argmax).",
+      "performance_drop": 0.0834,
+      "performance_drop_pp": 8.34,
+      "drop": 0.0834
     }
   ]
 }

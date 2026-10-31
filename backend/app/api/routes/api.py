@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 
 from backend.app.api.dependencies import get_db
-from backend.app.db.models import NamasteCode, HybridMappingResult, MappingDecision
+from backend.app.db.models import NamasteCode, HybridMappingResult, MappingDecision, Icd11Code
 from backend.app.services.icd_service import icd_service
 from backend.app.services.mapping_service import mapping_service
 from backend.app.services.mapping_pipeline import mapping_pipeline_service
@@ -23,7 +23,7 @@ from backend.app.schemas.schemas import (
     CareSuggestionsRequest,
     PatientReportRequest
 )
-from backend.app.fhir.bundle import generate_clinical_bundle
+from backend.app.fhir.bundle import generate_clinical_bundle, validate_fhir_bundle_structure
 from backend.app.services.reporting import patient_report_generator
 
 router = APIRouter()
@@ -213,13 +213,37 @@ def get_evaluation_results():
         return run_benchmarks()
     except Exception as e:
         return {
-            "status_label": "Not Yet Evaluated",
+            "status": "UNAVAILABLE",
+            "status_label": "Evaluation Unavailable",
             "is_sample_benchmark": False,
             "error": str(e),
+            "message": f"Evaluation could not be completed: {str(e)}",
+            "sample_count": 0,
             "metrics": {},
             "baselines": [],
             "ablations": []
         }
+
+@router.post("/evaluation/run")
+@router.get("/evaluation/run")
+def trigger_evaluation_run():
+    """Triggers an on-demand re-execution of the benchmark suite (B1-B6) and ablation study (A1-A5)."""
+    try:
+        from experiments.benchmark_runner import run_benchmarks
+        return run_benchmarks()
+    except Exception as e:
+        return {
+            "status": "UNAVAILABLE",
+            "status_label": "Evaluation Unavailable",
+            "is_sample_benchmark": False,
+            "error": str(e),
+            "message": f"Evaluation runner failed: {str(e)}",
+            "sample_count": 0,
+            "metrics": {},
+            "baselines": [],
+            "ablations": []
+        }
+
 
 # ---------------------------------------------------------
 # Legacy Search, Translate & FHIR Endpoints
@@ -287,8 +311,16 @@ def get_fhir_conceptmap(db: Session = Depends(get_db)):
     return generate_concept_map(mappings)
 
 @router.post("/fhir/generate-bundle")
-def generate_bundle(request: GenerateBundleRequest, db: Session = Depends(get_db)):
-    """Generates FHIR Transaction Bundle with Patient and Condition resources."""
+def generate_bundle(
+    request: GenerateBundleRequest,
+    raw_bundle: bool = Query(False, description="Return raw FHIR Bundle JSON without technical validation envelope"),
+    db: Session = Depends(get_db)
+):
+    """
+    Generates an HL7 FHIR R4 Transaction Bundle with Patient and Condition resources.
+    Disentangles algorithmic mapping acceptance from clinical verification confirmation.
+    Returns technical validation metadata separately in the response envelope.
+    """
     namaste_record = db.query(NamasteCode).filter(NamasteCode.namaste_code == request.namaste_code).first()
     condition_term = request.namaste_term or (namaste_record.term if namaste_record else "Unknown Ayurveda Condition")
 
@@ -296,16 +328,47 @@ def generate_bundle(request: GenerateBundleRequest, db: Session = Depends(get_db
     translations = []
     for m in mappings:
         if m.icd11_code and m.icd11_code != "NO_MATCH":
+            is_foundation_entity = bool(m.icd11_uri and "/entity/" in m.icd11_uri and m.icd11_code.isdigit())
+            system_uri = "http://id.who.int/icd/entity" if is_foundation_entity else "http://id.who.int/icd/release/11/mms"
             translations.append({
+                "code": m.icd11_code,
                 "target_uri": m.icd11_uri or m.icd11_code,
-                "icd11_title": m.icd11_title or m.icd11_code
+                "icd11_title": m.icd11_title or m.icd11_code,
+                "display": m.icd11_title or m.icd11_code,
+                "system": system_uri
             })
 
     # If DB mapping wasn't found but a candidate was selected from the live pipeline
     if not translations and request.selected_candidate_code:
+        cand_code = str(request.selected_candidate_code).strip()
+
+        # Resolve official concept title if not provided or equals numeric code
+        cand_title = request.selected_candidate_title
+        if not cand_title or cand_title == cand_code:
+            # Check Icd11Code table
+            icd_entry = db.query(Icd11Code).filter(Icd11Code.code == cand_code).first()
+            if icd_entry and icd_entry.display:
+                cand_title = icd_entry.display
+            else:
+                # Check HybridMappingResult table
+                hm_entry = db.query(HybridMappingResult).filter(HybridMappingResult.icd11_code == cand_code).first()
+                if hm_entry and hm_entry.icd11_title:
+                    cand_title = hm_entry.icd11_title
+                else:
+                    cand_title = cand_code
+
+        system = "http://id.who.int/icd/entity" if (cand_code.isdigit() and len(cand_code) > 6) else "http://id.who.int/icd/release/11/mms"
+        target_uri = request.selected_candidate_uri or (
+            f"http://id.who.int/icd/entity/{cand_code}" if system == "http://id.who.int/icd/entity"
+            else f"http://id.who.int/icd/release/11/mms/{cand_code}"
+        )
+
         translations.append({
-            "target_uri": f"http://id.who.int/icd/entity/{request.selected_candidate_code}",
-            "icd11_title": request.selected_candidate_code
+            "code": cand_code,
+            "target_uri": target_uri,
+            "icd11_title": cand_title,
+            "display": cand_title,
+            "system": system
         })
 
     is_confirmed = len(translations) > 0
@@ -318,15 +381,30 @@ def generate_bundle(request: GenerateBundleRequest, db: Session = Depends(get_db
             detail="Cannot generate definitive mapped Condition resource: candidate is unmapped or lacks verified target coding. Automatic decision required."
         )
 
+    patient_dict = request.patient.model_dump() if hasattr(request.patient, 'model_dump') else request.patient.dict()
+
     bundle = generate_clinical_bundle(
-        patient_data=request.patient.dict(),
+        patient_data=patient_dict,
         condition_code=request.namaste_code,
         condition_term=condition_term,
         translations=translations,
         is_confirmed=is_confirmed,
-        decision_class=decision_class
+        decision_class=decision_class,
+        clinical_verification_status=request.clinical_verification_status
     )
-    return bundle
+
+    val_res = validate_fhir_bundle_structure(bundle)
+
+    if raw_bundle:
+        return bundle
+
+    return {
+        "bundle": bundle,
+        "structure_valid": val_res["is_valid"],
+        "validation_errors": val_res["errors"],
+        "validation_warnings": val_res["warnings"],
+        "validation_disclaimer": val_res["disclaimer"]
+    }
 
 @router.post("/reports/patient-mapping")
 def generate_patient_mapping_report(request: PatientReportRequest):

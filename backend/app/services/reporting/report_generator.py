@@ -251,13 +251,28 @@ class PatientReportGenerator:
         # Provenance records
         provenance_list = []
         if candidate and candidate.get("evidence"):
-            provenance_list = candidate.get("evidence", [])
+            from backend.app.services.graph_rag.evidence_verifier import is_url_verified
+            for e in candidate.get("evidence", []):
+                rec_url = e.get("url") or e.get("source_url") or ""
+                is_ver = e.get("url_verified")
+                if is_ver is None:
+                    is_ver = is_url_verified(rec_url)
+                provenance_list.append({
+                    "title": e.get("title"),
+                    "source": e.get("source") or e.get("publisher"),
+                    "url": rec_url if is_ver else "",
+                    "url_verified": bool(is_ver),
+                    "evidence_status": "SUPPORTED" if is_ver else "UNVERIFIED",
+                    "excerpt": e.get("excerpt") or e.get("text", "")
+                })
         elif formatted_suggestions:
             for s in formatted_suggestions:
                 provenance_list.append({
                     "title": s.get("source_title"),
                     "source": s.get("publisher"),
-                    "url": s.get("source_url"),
+                    "url": s.get("source_url") if s.get("url_verified") else "",
+                    "url_verified": s.get("url_verified", False),
+                    "evidence_status": s.get("evidence_status", "UNVERIFIED"),
                     "excerpt": s.get("evidence_excerpt")
                 })
 

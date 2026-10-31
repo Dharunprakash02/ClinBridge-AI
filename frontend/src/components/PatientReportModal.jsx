@@ -59,7 +59,7 @@ export default function PatientReportModal({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(10, 15, 30, 0.85)',
+        backgroundColor: 'var(--modal-overlay)',
         backdropFilter: 'blur(8px)',
         zIndex: 9999,
         display: 'flex',
@@ -77,9 +77,9 @@ export default function PatientReportModal({
           display: 'flex',
           flexDirection: 'column',
           borderRadius: '12px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
-          background: '#0f172a',
+          boxShadow: 'var(--card-shadow)',
+          border: '1px solid var(--surface-border)',
+          background: 'var(--modal-bg)',
           overflow: 'hidden'
         }}
       >
@@ -87,17 +87,17 @@ export default function PatientReportModal({
         <div
           style={{
             padding: '1.25rem 1.5rem',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            borderBottom: '1px solid var(--surface-border)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            background: 'rgba(15, 23, 42, 0.9)'
+            background: 'var(--modal-header-bg)'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <FileText size={24} color="#38bdf8" />
             <div>
-              <h3 style={{ fontSize: '1.15rem', color: '#f8fafc', margin: 0, fontWeight: 700 }}>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', margin: 0, fontWeight: 700 }}>
                 {report_title}
               </h3>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -145,7 +145,7 @@ export default function PatientReportModal({
             display: 'flex',
             flexDirection: 'column',
             gap: '1.75rem',
-            color: '#e2e8f0',
+            color: 'var(--text-primary)',
             fontSize: '0.9rem'
           }}
         >
@@ -164,10 +164,10 @@ export default function PatientReportModal({
             }}
           >
             <div>
-              <div style={{ fontSize: '0.75rem', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--accent-color)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>
                 {system_version}
               </div>
-              <h2 style={{ fontSize: '1.35rem', color: '#f8fafc', margin: '0.25rem 0 0 0', fontWeight: 800 }}>
+              <h2 style={{ fontSize: '1.35rem', color: 'var(--text-primary)', margin: '0.25rem 0 0 0', fontWeight: 800 }}>
                 {report_title}
               </h2>
             </div>
@@ -178,9 +178,9 @@ export default function PatientReportModal({
                   padding: '0.25rem 0.65rem',
                   borderRadius: '6px',
                   fontWeight: 700,
-                  background: fhir_bundle_valid ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                  color: fhir_bundle_valid ? '#34d399' : '#fbbf24',
-                  border: `1px solid ${fhir_bundle_valid ? '#10b981' : '#f59e0b'}`
+                  background: fhir_bundle_valid ? 'var(--badge-selfcare-bg)' : 'var(--badge-triage-bg)',
+                  color: fhir_bundle_valid ? 'var(--badge-selfcare-text)' : 'var(--badge-triage-text)',
+                  border: `1px solid ${fhir_bundle_valid ? 'var(--badge-selfcare-border)' : 'var(--badge-triage-border)'}`
                 }}
               >
                 FHIR R4 Status: {fhir_validation_status}
@@ -189,26 +189,26 @@ export default function PatientReportModal({
           </div>
 
           {/* Section 2: Patient Information */}
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '1.25rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <h4 style={{ fontSize: '0.95rem', color: '#38bdf8', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div style={{ background: 'var(--surface-card)', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>
+            <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-color)', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               <User size={16} /> 2. Patient Demographics & Encounter
             </h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
               <div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Full Name</div>
-                <div style={{ fontWeight: 600, color: '#f8fafc', fontSize: '1rem' }}>{patient.full_name}</div>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '1rem' }}>{patient.full_name}</div>
               </div>
               <div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Date of Birth</div>
-                <div style={{ fontWeight: 500 }}>{patient.birth_date} {patient.age_years != null ? `(${patient.age_years} yrs)` : ''}</div>
+                <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{patient.birth_date} {patient.age_years != null ? `(${patient.age_years} yrs)` : ''}</div>
               </div>
               <div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Gender</div>
-                <div style={{ fontWeight: 500 }}>{patient.gender}</div>
+                <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{patient.gender}</div>
               </div>
               <div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Patient ID</div>
-                <div style={{ fontWeight: 500, color: '#93c5fd' }}>{patient.patient_id}</div>
+                <div style={{ fontWeight: 600, color: 'var(--accent-color)' }}>{patient.patient_id}</div>
               </div>
             </div>
           </div>
@@ -216,18 +216,18 @@ export default function PatientReportModal({
           {/* Section 3 & 4: Side-by-Side Diagnostic Terminology Mapping */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem' }}>
             {/* Section 3: Original Ayurveda / NAMASTE */}
-            <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '1.25rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-              <h4 style={{ fontSize: '0.95rem', color: '#a78bfa', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <div style={{ background: 'var(--surface-card)', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>
+              <h4 style={{ fontSize: '0.95rem', color: 'var(--purple-accent)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 3. Original Ayurveda/NAMASTE Diagnosis
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Condition Name: </span>
-                  <strong style={{ color: '#f8fafc', fontSize: '1.05rem' }}>{original_ayurveda_diagnosis.condition_name}</strong>
+                  <strong style={{ color: 'var(--text-primary)', fontSize: '1.05rem' }}>{original_ayurveda_diagnosis.condition_name}</strong>
                 </div>
                 <div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>NAMASTE / NAMC Code: </span>
-                  <span style={{ padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'rgba(167, 139, 250, 0.15)', color: '#c4b5fd', fontWeight: 600, fontSize: '0.85rem' }}>
+                  <span style={{ padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'rgba(124, 58, 237, 0.12)', color: 'var(--purple-accent)', border: '1px solid rgba(124, 58, 237, 0.25)', fontWeight: 600, fontSize: '0.85rem' }}>
                     {original_ayurveda_diagnosis.source_code}
                   </span>
                 </div>
@@ -235,31 +235,31 @@ export default function PatientReportModal({
                   <strong>System:</strong> {original_ayurveda_diagnosis.terminology_system} ({original_ayurveda_diagnosis.terminology_version})
                 </div>
                 {original_ayurveda_diagnosis.description && (
-                  <p style={{ fontSize: '0.82rem', color: '#cbd5e1', margin: '0.4rem 0 0 0', lineHeight: 1.45, fontStyle: 'italic' }}>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0.4rem 0 0 0', lineHeight: 1.45, fontStyle: 'italic' }}>
                     "{original_ayurveda_diagnosis.description}"
                   </p>
                 )}
                 {original_ayurveda_diagnosis.doshas?.length > 0 && (
-                  <div style={{ fontSize: '0.8rem', color: '#e9d5ff', marginTop: '0.25rem' }}>
-                    <strong>Associated Doshas:</strong> {original_ayurveda_diagnosis.doshas.join(', ')}
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                    <strong style={{ color: 'var(--text-primary)' }}>Associated Doshas:</strong> {original_ayurveda_diagnosis.doshas.join(', ')}
                   </div>
                 )}
               </div>
             </div>
 
             {/* Section 4: Mapped WHO ICD-11 Concept */}
-            <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '1.25rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-              <h4 style={{ fontSize: '0.95rem', color: '#34d399', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <div style={{ background: 'var(--surface-card)', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>
+              <h4 style={{ fontSize: '0.95rem', color: 'var(--badge-supported-color)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 4. Mapped WHO ICD-11 Concept
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Target Concept Title: </span>
-                  <strong style={{ color: '#f8fafc', fontSize: '1.05rem' }}>{mapped_icd11_concept.target_title}</strong>
+                  <strong style={{ color: 'var(--text-primary)', fontSize: '1.05rem' }}>{mapped_icd11_concept.target_title}</strong>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ICD-11 Code: </span>
-                  <span style={{ padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'rgba(52, 211, 153, 0.15)', color: '#6ee7b7', fontWeight: 700, fontSize: '0.88rem' }}>
+                  <span style={{ padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'var(--badge-selfcare-bg)', color: 'var(--badge-selfcare-text)', border: '1px solid var(--badge-selfcare-border)', fontWeight: 700, fontSize: '0.88rem' }}>
                     {mapped_icd11_concept.target_code}
                   </span>
                   <span className={`badge ${mapped_icd11_concept.decision_class === 'AUTO_ACCEPTED' ? 'badge-high' : 'badge-ambiguous'}`} style={{ fontSize: '0.7rem' }}>
@@ -272,16 +272,16 @@ export default function PatientReportModal({
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                   <strong>Module / Relationship:</strong> {mapped_icd11_concept.tm2_designation} • Relationship: <em>{mapped_icd11_concept.mapping_relationship}</em>
                 </div>
-                <div style={{ fontSize: '0.8rem', color: '#93c5fd' }}>
-                  <strong>Ranking Score:</strong> {(mapped_icd11_concept.ranking_score * 100).toFixed(1)}% ({mapped_icd11_concept.confidence_calibration_status})
+                <div style={{ fontSize: '0.8rem', color: 'var(--accent-color)' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>Ranking Score:</strong> {(mapped_icd11_concept.ranking_score * 100).toFixed(1)}% ({mapped_icd11_concept.confidence_calibration_status})
                 </div>
               </div>
             </div>
           </div>
 
           {/* Section 5: Mapping Decision and Granular Score Breakdown */}
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '1.25rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <h4 style={{ fontSize: '0.95rem', color: '#60a5fa', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div style={{ background: 'var(--surface-card)', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>
+            <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-color)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               5. Multi-Signal Score Breakdown & Automated Policy
             </h4>
             <table className="custom-table" style={{ fontSize: '0.85rem' }}>
@@ -297,11 +297,11 @@ export default function PatientReportModal({
               </thead>
               <tbody>
                 <tr>
-                  <td>{(decision_and_scores.textual * 100).toFixed(1)}%</td>
-                  <td>{(decision_and_scores.semantic * 100).toFixed(1)}%</td>
-                  <td>{(decision_and_scores.graph * 100).toFixed(1)}%</td>
-                  <td>{(decision_and_scores.evidence * 100).toFixed(1)}%</td>
-                  <td style={{ fontWeight: 700, color: '#34d399' }}>{(decision_and_scores.final * 100).toFixed(1)}%</td>
+                  <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{(decision_and_scores.textual * 100).toFixed(1)}%</td>
+                  <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{(decision_and_scores.semantic * 100).toFixed(1)}%</td>
+                  <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{(decision_and_scores.graph * 100).toFixed(1)}%</td>
+                  <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{(decision_and_scores.evidence * 100).toFixed(1)}%</td>
+                  <td style={{ fontWeight: 700, color: 'var(--badge-supported-color)' }}>{(decision_and_scores.final * 100).toFixed(1)}%</td>
                   <td>
                     <span className={`badge ${mapped_icd11_concept.decision_class === 'AUTO_ACCEPTED' ? 'badge-high' : 'badge-ambiguous'}`}>
                       {mapped_icd11_concept.decision_class}
@@ -310,95 +310,131 @@ export default function PatientReportModal({
                 </tr>
               </tbody>
             </table>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.65rem' }}>
-              <strong>Policy Rationale:</strong> {decision_and_scores.policy_rationale}
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.65rem' }}>
+              <strong style={{ color: 'var(--text-primary)' }}>Policy Rationale:</strong> {decision_and_scores.policy_rationale}
             </div>
           </div>
 
           {/* Section 6: Knowledge Graph Context */}
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '1.25rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <h4 style={{ fontSize: '0.95rem', color: '#f59e0b', marginBottom: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div style={{ background: 'var(--surface-card)', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>
+            <h4 style={{ fontSize: '0.95rem', color: 'var(--warning-color)', marginBottom: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               6. Knowledge Graph Semantic Context
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
               <div>
-                <strong>Graph Symptoms:</strong>{' '}
-                {knowledge_graph_context.symptoms?.length > 0
-                  ? knowledge_graph_context.symptoms.join(', ')
-                  : 'No specific symptomatic nodes registered'}
+                <strong style={{ color: 'var(--text-secondary)' }}>Graph Symptoms:</strong>{' '}
+                <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                  {knowledge_graph_context.symptoms?.length > 0
+                    ? knowledge_graph_context.symptoms.join(', ')
+                    : 'No specific symptomatic nodes registered'}
+                </span>
               </div>
               <div>
-                <strong>Graph Dosha Derangements:</strong>{' '}
-                {knowledge_graph_context.doshas?.length > 0
-                  ? knowledge_graph_context.doshas.join(', ')
-                  : 'Tridoshic / Generalized'}
+                <strong style={{ color: 'var(--text-secondary)' }}>Graph Dosha Derangements:</strong>{' '}
+                <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                  {knowledge_graph_context.doshas?.length > 0
+                    ? knowledge_graph_context.doshas.join(', ')
+                    : 'Tridoshic / Generalized'}
+                </span>
               </div>
               {mapped_icd11_concept.relevant_graph_relations?.length > 0 && (
                 <div>
-                  <strong>Active Graph Edges:</strong> {mapped_icd11_concept.relevant_graph_relations.join(' • ')}
+                  <strong style={{ color: 'var(--text-secondary)' }}>Active Graph Edges:</strong>{' '}
+                  <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                    {mapped_icd11_concept.relevant_graph_relations.join(' • ')}
+                  </span>
                 </div>
               )}
             </div>
           </div>
 
           {/* Section 7: Top Two AI-Generated Grounded Suggestions */}
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '1.25rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <div style={{ background: 'var(--surface-card)', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>
             <h4 style={{ fontSize: '0.95rem', color: '#10b981', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <HeartPulse size={17} /> 7. AI-Powered Evidence-Grounded Informational Suggestions
             </h4>
             
-            <div style={{ padding: '0.65rem 0.85rem', background: 'rgba(30, 41, 59, 0.6)', borderLeft: '3px solid #38bdf8', borderRadius: '4px', fontSize: '0.78rem', color: '#cbd5e1', marginBottom: '1rem', lineHeight: 1.4 }}>
+            <div className="clinical-notice-box" style={{ marginBottom: '1rem' }}>
+              <strong className="notice-title">Clinical Informational Notice:</strong>
               {care_suggestions_disclaimer}
             </div>
 
             {care_suggestions?.length === 0 ? (
-              <div style={{ padding: '1rem', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '6px', color: '#fde68a', fontSize: '0.85rem' }}>
+              <div style={{ padding: '1rem', background: 'var(--badge-triage-bg)', borderRadius: '6px', color: 'var(--badge-triage-text)', fontSize: '0.85rem' }}>
                 <AlertTriangle size={15} style={{ verticalAlign: 'middle', marginRight: '0.4rem' }} />
                 Care suggestions withheld: Mapping is categorized as {mapped_icd11_concept.decision_class}. Definitive clinical care suggestions are restricted until a validated terminology match is established.
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-                {care_suggestions.slice(0, 2).map((sugg, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      padding: '1rem',
-                      borderRadius: '8px',
-                      background: 'rgba(15, 23, 42, 0.7)',
-                      border: `1px solid ${sugg.type === 'SELF_CARE_GUIDANCE' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-                      <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 700, background: sugg.type === 'SELF_CARE_GUIDANCE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: sugg.type === 'SELF_CARE_GUIDANCE' ? '#34d399' : '#fbbf24' }}>
-                        Suggestion {idx + 1}: {sugg.type === 'SELF_CARE_GUIDANCE' ? 'Self-Care Information' : 'Warning Signs & Triage'}
-                      </span>
-                    </div>
-                    <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.92rem', marginBottom: '0.35rem' }}>
-                      {sugg.title}
-                    </div>
-                    <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', margin: '0 0 0.5rem 0', lineHeight: 1.45 }}>
-                      {sugg.explanation}
-                    </p>
-                    <div style={{ fontSize: '0.76rem', color: '#93c5fd', marginBottom: '0.5rem' }}>
-                      <strong>Relevance:</strong> {sugg.relevance}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '0.4rem' }}>
-                      <strong>Source:</strong> {sugg.source_title} ({sugg.publisher})
-                    </div>
-                    {sugg.evidence_excerpt && (
-                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic', marginTop: '0.25rem' }}>
-                        "{sugg.evidence_excerpt}"
+                {care_suggestions.slice(0, 2).map((sugg, idx) => {
+                  const isSelfCare = sugg.type === 'SELF_CARE_GUIDANCE';
+                  const badgeBg = isSelfCare ? 'var(--badge-selfcare-bg)' : 'var(--badge-triage-bg)';
+                  const badgeText = isSelfCare ? 'var(--badge-selfcare-text)' : 'var(--badge-triage-text)';
+                  const borderAccent = isSelfCare ? 'var(--badge-selfcare-border)' : 'var(--badge-triage-border)';
+
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '1rem',
+                        borderRadius: '8px',
+                        background: 'var(--surface-card)',
+                        border: `1px solid ${borderAccent}`
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 700, background: badgeBg, color: badgeText, border: `1px solid ${borderAccent}`, textTransform: 'uppercase' }}>
+                          Suggestion {idx + 1}: {isSelfCare ? 'Self-Care Information' : 'Warning Signs & Triage'}
+                        </span>
+                        {sugg.evidence_status === 'SUPPORTED' && sugg.url_verified !== false ? (
+                          <span style={{ fontSize: '0.72rem', color: 'var(--badge-supported-color)', fontWeight: 700 }}>
+                            Evidence: SUPPORTED
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '0.72rem', color: 'var(--warning-color)', fontWeight: 700 }}>
+                            Evidence: UNVERIFIED
+                          </span>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.92rem', marginBottom: '0.35rem' }}>
+                        {sugg.title}
+                      </div>
+                      <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', margin: '0 0 0.5rem 0', lineHeight: 1.45 }}>
+                        {sugg.explanation}
+                      </p>
+                      <div className="concept-relevance-box" style={{ marginBottom: '0.5rem' }}>
+                        <strong className="relevance-title">Relevance:</strong> {sugg.relevance}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', borderTop: '1px solid var(--surface-border)', paddingTop: '0.4rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.35rem' }}>
+                        <div>
+                          <strong>Source:</strong> {sugg.source_title} ({sugg.publisher})
+                          {sugg.passage_location && <span> • <em>{sugg.passage_location}</em></span>}
+                        </div>
+                        {sugg.url_verified !== false && sugg.source_url && sugg.evidence_status === 'SUPPORTED' ? (
+                          <a href={sugg.source_url} target="_blank" rel="noreferrer" style={{ color: 'var(--link-accent)', textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                            Verified Source &rarr;
+                          </a>
+                        ) : (
+                          <span style={{ color: 'var(--warning-color)', fontStyle: 'italic', fontWeight: 600 }}>
+                            Source unavailable — evidence not verified
+                          </span>
+                        )}
+                      </div>
+                      {sugg.evidence_excerpt && (
+                        <blockquote className="verbatim-quote-box">
+                          "{sugg.evidence_excerpt}"
+                        </blockquote>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
 
           {/* Section 8: Evidence Sources and Provenance */}
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '1.25rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <h4 style={{ fontSize: '0.95rem', color: '#38bdf8', marginBottom: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div style={{ background: 'var(--surface-card)', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>
+            <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-color)', marginBottom: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <BookOpen size={16} /> 8. Evidence Sources & Provenance Repository
             </h4>
             {evidence_provenance?.length === 0 ? (
@@ -415,15 +451,17 @@ export default function PatientReportModal({
                 <tbody>
                   {evidence_provenance.slice(0, 4).map((rec, i) => (
                     <tr key={i}>
-                      <td style={{ fontWeight: 600 }}>{rec.title}</td>
-                      <td>{rec.source || 'WHO / AYUSH Repository'}</td>
+                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{rec.title}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{rec.source || 'WHO / AYUSH Repository'}</td>
                       <td>
-                        {rec.url || rec.source_url ? (
-                          <a href={rec.url || rec.source_url} target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none' }}>
+                        {rec.url_verified !== false && (rec.url || rec.source_url) ? (
+                          <a href={rec.url || rec.source_url} target="_blank" rel="noreferrer" style={{ color: 'var(--link-accent)', textDecoration: 'none', fontWeight: 600 }}>
                             Reference URL &rarr;
                           </a>
                         ) : (
-                          'Official Classification Guideline'
+                          <span style={{ color: 'var(--warning-color)', fontStyle: 'italic', fontWeight: 500 }}>
+                            Source unavailable — evidence not verified
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -434,30 +472,30 @@ export default function PatientReportModal({
           </div>
 
           {/* Section 9: Limitations and Validation Status */}
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '1.25rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <h4 style={{ fontSize: '0.95rem', color: '#f87171', marginBottom: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div style={{ background: 'var(--surface-card)', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>
+            <h4 style={{ fontSize: '0.95rem', color: 'var(--error-color)', marginBottom: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <ShieldAlert size={16} /> 9. Clinical Limitations & Interoperability Validation Status
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.5 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               <div>
-                <strong>HL7 FHIR R4 Bundle Validation:</strong>{' '}
-                <span style={{ color: fhir_bundle_valid ? '#34d399' : '#fbbf24', fontWeight: 600 }}>
+                <strong style={{ color: 'var(--text-primary)' }}>HL7 FHIR R4 Bundle Validation:</strong>{' '}
+                <span style={{ color: fhir_bundle_valid ? 'var(--badge-supported-color)' : 'var(--warning-color)', fontWeight: 600 }}>
                   {fhir_bundle_valid ? 'Structurally Valid Transaction Bundle (Compliant with HL7 FHIR R4 standard constraints)' : 'Provisional Structure'}
                 </span>
                 {fhir_validation_errors?.length > 0 && (
-                  <div style={{ color: '#fca5a5', marginTop: '0.2rem' }}>
+                  <div style={{ color: 'var(--error-color)', marginTop: '0.2rem' }}>
                     Errors: {fhir_validation_errors.join('; ')}
                   </div>
                 )}
               </div>
-              <p style={{ margin: '0.3rem 0 0 0', fontStyle: 'italic', color: '#94a3b8' }}>
+              <p style={{ margin: '0.3rem 0 0 0', fontStyle: 'italic', color: 'var(--text-muted)' }}>
                 {academic_disclaimer}
               </p>
             </div>
           </div>
 
           {/* Section 10: Metadata and Sign-off */}
-          <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+          <div style={{ borderTop: '1px solid var(--surface-border)', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             <div>
               <strong>ClinBridge AI Research Engine</strong> • Generated: {generated_at}
             </div>

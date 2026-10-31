@@ -105,8 +105,8 @@ export default function ExplainabilityCard({ candidate, sourceTerm, pipelineDeci
       </div>
 
       {/* Knowledge Graph Subgraph & Symptoms */}
-      <div style={{ background: 'rgba(15, 23, 42, 0.45)', border: '1px solid var(--surface-border)', borderRadius: '8px', padding: '0.85rem 1rem', marginTop: '1rem', fontSize: '0.88rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#93c5fd', fontWeight: 600, marginBottom: '0.3rem' }}>
+      <div style={{ background: 'var(--surface-card)', border: '1px solid var(--surface-border)', borderRadius: '8px', padding: '0.85rem 1rem', marginTop: '1rem', fontSize: '0.88rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--link-accent)', fontWeight: 700, marginBottom: '0.3rem' }}>
           <Network size={15} /> Knowledge Graph Influencing Context
         </div>
         <div style={{ color: 'var(--text-secondary)' }}>
@@ -131,7 +131,7 @@ export default function ExplainabilityCard({ candidate, sourceTerm, pipelineDeci
               <div className="evidence-title">
                 <span>{ev.title} ({ev.publication_year})</span>
                 {ev.source_url && (
-                  <a href={ev.source_url} target="_blank" rel="noreferrer" style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.78rem' }}>
+                  <a href={ev.source_url} target="_blank" rel="noreferrer" style={{ color: 'var(--link-accent)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.78rem', fontWeight: 600 }}>
                     Source URL <ExternalLink size={12} />
                   </a>
                 )}
@@ -143,7 +143,7 @@ export default function ExplainabilityCard({ candidate, sourceTerm, pipelineDeci
             </div>
           ))
         ) : (
-          <div style={{ padding: '0.75rem', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '6px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          <div style={{ padding: '0.75rem', background: 'var(--surface-card-subtle)', border: '1px solid var(--surface-border)', borderRadius: '6px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             No verified literature records currently indexed for this specific concept. Evidence support evaluated as 0.0%.
           </div>
         )}
@@ -157,7 +157,7 @@ export default function ExplainabilityCard({ candidate, sourceTerm, pipelineDeci
           </span>
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
             {alternatives.map((alt, i) => (
-              <span key={i} style={{ padding: '0.25rem 0.6rem', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid var(--surface-border)', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <span key={i} style={{ padding: '0.25rem 0.6rem', background: 'var(--surface-card)', border: '1px solid var(--surface-border)', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 500 }}>
                 {alt.candidate} ({(alt.score * 100).toFixed(0)}%)
               </span>
             ))}

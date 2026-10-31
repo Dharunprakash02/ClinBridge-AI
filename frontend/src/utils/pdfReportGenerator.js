@@ -296,14 +296,29 @@ export function generateAndDownloadPatientReportPdf(reportData) {
       </div>
     ` : care_suggestions.slice(0, 2).map((sugg, i) => `
       <div class="suggestion-card ${sugg.type === 'WARNING_SIGNS_AND_TRIAGE' ? 'triage' : ''}">
-        <div style="font-size: 8pt; font-weight: 700; color: #64748b; text-transform: uppercase;">
-          Suggestion ${i + 1}: ${sugg.type === 'SELF_CARE_GUIDANCE' ? 'General Health & Self-Care Information' : 'Warning Signs & Clinical Triage'}
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <div style="font-size: 8pt; font-weight: 700; color: #64748b; text-transform: uppercase;">
+            Suggestion ${i + 1}: ${sugg.type === 'SELF_CARE_GUIDANCE' ? 'General Health & Self-Care Information' : 'Warning Signs & Clinical Triage'}
+          </div>
+          <div style="font-size: 7.5pt; font-weight: 700; color: ${sugg.evidence_status === 'SUPPORTED' && sugg.url_verified !== false ? '#059669' : '#d97706'};">
+            ${sugg.evidence_status === 'SUPPORTED' && sugg.url_verified !== false ? 'Evidence: SUPPORTED' : 'Evidence: UNVERIFIED'}
+          </div>
         </div>
         <div class="suggestion-title">${sugg.title}</div>
         <div style="font-size: 9.5pt; margin-bottom: 6px; color: #334155;">${sugg.explanation}</div>
         <div style="font-size: 8.5pt; color: #0369a1; margin-bottom: 4px;"><strong>Concept Relevance:</strong> ${sugg.relevance}</div>
-        <div style="font-size: 8pt; color: #64748b;"><strong>Source:</strong> ${sugg.source_title} (${sugg.publisher})</div>
-        ${sugg.evidence_excerpt ? `<div style="font-size: 8pt; color: #475569; font-style: italic; margin-top: 3px;">"${sugg.evidence_excerpt}"</div>` : ''}
+        <div style="font-size: 8pt; color: #64748b;">
+          <strong>Source:</strong> ${sugg.source_title} (${sugg.publisher})
+          ${sugg.passage_location ? ` • <em>${sugg.passage_location}</em>` : ''}
+        </div>
+        <div style="font-size: 8pt; margin-top: 2px;">
+          ${sugg.url_verified !== false && sugg.source_url && sugg.evidence_status === 'SUPPORTED' ? `
+            <span style="color: #0284c7;"><strong>Verified Reference:</strong> ${sugg.source_url}</span>
+          ` : `
+            <span style="color: #d97706; font-style: italic;">Source unavailable — evidence not verified</span>
+          `}
+        </div>
+        ${sugg.evidence_excerpt ? `<div style="font-size: 8pt; color: #475569; font-style: italic; margin-top: 4px;">"${sugg.evidence_excerpt}"</div>` : ''}
         ${sugg.limitations ? `<div style="font-size: 7.5pt; color: #94a3b8; margin-top: 3px;"><strong>Limitations:</strong> ${sugg.limitations}</div>` : ''}
       </div>
     `).join('')}
@@ -325,7 +340,7 @@ export function generateAndDownloadPatientReportPdf(reportData) {
           <tr>
             <td><strong>${e.title}</strong></td>
             <td>${e.source || 'WHO / AYUSH'}</td>
-            <td>${e.url || e.source_url || 'Verified Clinical Guideline'}</td>
+            <td>${e.url_verified !== false && (e.url || e.source_url) ? (e.url || e.source_url) : '<span style="color: #d97706; font-style: italic;">Source unavailable — evidence not verified</span>'}</td>
           </tr>
         `).join('') : `
           <tr><td colspan="3" style="text-align:center; color:#94a3b8;">No additional external records attached</td></tr>

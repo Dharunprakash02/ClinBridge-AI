@@ -1,11 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
+  --theme: 'dark';
   --bg-color: #0b0f19;
   --bg-gradient: radial-gradient(circle at 50% 0%, #171f38 0%, #0b0f19 75%);
   --surface-color: rgba(19, 26, 45, 0.75);
   --surface-border: rgba(255, 255, 255, 0.08);
   --surface-hover: rgba(30, 41, 69, 0.85);
+  --surface-card: rgba(15, 23, 42, 0.6);
+  --surface-card-subtle: rgba(15, 23, 42, 0.4);
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
@@ -17,6 +20,90 @@
   --error-color: #ef4444;
   --purple-accent: #8b5cf6;
   --cyan-accent: #06b6d4;
+  --card-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
+  --input-bg: rgba(15, 23, 42, 0.7);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --nav-btn-bg: rgba(15, 23, 42, 0.6);
+  --code-bg: #080c15;
+  --code-text: #a5f3fc;
+  --heading-gradient: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #38bdf8 100%);
+  --modal-bg: #0f172a;
+  --modal-overlay: rgba(10, 15, 30, 0.85);
+  --modal-header-bg: rgba(15, 23, 42, 0.95);
+  
+  /* Care Suggestions & Clinical Callout Tokens */
+  --notice-bg: rgba(14, 165, 233, 0.12);
+  --notice-border: #38bdf8;
+  --notice-title: #38bdf8;
+  --notice-text: #cbd5e1;
+  --relevance-bg: rgba(59, 130, 246, 0.12);
+  --relevance-border: rgba(59, 130, 246, 0.3);
+  --relevance-text: #93c5fd;
+  --relevance-strong: #bfdbfe;
+  --quote-bg: rgba(15, 23, 42, 0.6);
+  --quote-border: #38bdf8;
+  --quote-text: #cbd5e1;
+  --badge-selfcare-bg: rgba(16, 185, 129, 0.15);
+  --badge-selfcare-text: #34d399;
+  --badge-selfcare-border: rgba(16, 185, 129, 0.35);
+  --badge-triage-bg: rgba(245, 158, 11, 0.15);
+  --badge-triage-text: #fbbf24;
+  --badge-triage-border: rgba(245, 158, 11, 0.35);
+  --badge-supported-color: #34d399;
+  --link-accent: #38bdf8;
+}
+
+[data-theme="light"] {
+  --theme: 'light';
+  --bg-color: #f1f5f9;
+  --bg-gradient: radial-gradient(circle at 50% -10%, #e0e7ff 0%, #f1f5f9 65%, #e2e8f0 100%);
+  --surface-color: rgba(255, 255, 255, 0.92);
+  --surface-border: rgba(203, 213, 225, 0.85);
+  --surface-hover: rgba(241, 245, 249, 1);
+  --surface-card: rgba(248, 250, 252, 0.95);
+  --surface-card-subtle: rgba(241, 245, 249, 0.9);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --accent-color: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-glow: rgba(37, 99, 235, 0.2);
+  --success-color: #059669;
+  --warning-color: #d97706;
+  --error-color: #dc2626;
+  --purple-accent: #7c3aed;
+  --cyan-accent: #0891b2;
+  --card-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --nav-btn-bg: rgba(255, 255, 255, 0.9);
+  --code-bg: #0f172a;
+  --code-text: #38bdf8;
+  --heading-gradient: linear-gradient(135deg, #1d4ed8 0%, #6d28d9 50%, #0284c7 100%);
+  --modal-bg: #ffffff;
+  --modal-overlay: rgba(15, 23, 42, 0.6);
+  --modal-header-bg: #f8fafc;
+
+  /* Care Suggestions & Clinical Callout Tokens (High Contrast Light Mode) */
+  --notice-bg: #f0f9ff;
+  --notice-border: #0284c7;
+  --notice-title: #0369a1;
+  --notice-text: #0f172a;
+  --relevance-bg: #eff6ff;
+  --relevance-border: #bfdbfe;
+  --relevance-text: #1e40af;
+  --relevance-strong: #172554;
+  --quote-bg: #f8fafc;
+  --quote-border: #2563eb;
+  --quote-text: #1e293b;
+  --badge-selfcare-bg: #ecfdf5;
+  --badge-selfcare-text: #065f46;
+  --badge-selfcare-border: #a7f3d0;
+  --badge-triage-bg: #fffbeb;
+  --badge-triage-text: #92400e;
+  --badge-triage-border: #fde68a;
+  --badge-supported-color: #047857;
+  --link-accent: #1d4ed8;
 }
 
 * {
@@ -33,6 +120,7 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .glass-panel {
@@ -41,7 +129,8 @@ body {
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--surface-border);
   border-radius: 16px;
-  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--card-shadow);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .app-container {
@@ -56,13 +145,13 @@ body {
 /* Header */
 header {
   text-align: center;
-  padding: 1.5rem 0 0.5rem;
+  padding: 1rem 0 0.5rem;
 }
 
 header h1 {
   font-size: 2.6rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #38bdf8 100%);
+  background: var(--heading-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: flex;
@@ -78,6 +167,47 @@ header p {
   margin-top: 0.25rem;
 }
 
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 9999px;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  user-select: none;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.theme-toggle-btn .theme-icon {
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle-btn:hover .theme-icon {
+  transform: rotate(20deg) scale(1.1);
+}
+
+.theme-toggle-btn .theme-icon.sun {
+  color: #f59e0b;
+}
+
+.theme-toggle-btn .theme-icon.moon {
+  color: #3b82f6;
+}
+
 /* Navigation Tabs */
 .nav-tabs {
   display: flex;
@@ -88,7 +218,7 @@ header p {
 }
 
 .nav-tab-btn {
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--nav-btn-bg);
   border: 1px solid var(--surface-border);
   color: var(--text-secondary);
   padding: 0.65rem 1.25rem;
@@ -105,7 +235,7 @@ header p {
 .nav-tab-btn:hover {
   color: var(--text-primary);
   background: var(--surface-hover);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--surface-border);
 }
 
 .nav-tab-btn.active {
@@ -122,7 +252,7 @@ header p {
   gap: 0.75rem;
   padding: 1.25rem;
   margin-bottom: 1.5rem;
-  background: rgba(11, 17, 33, 0.65);
+  background: var(--surface-card);
   border: 1px solid var(--surface-border);
   border-radius: 14px;
 }
@@ -134,7 +264,7 @@ header p {
   text-align: center;
   padding: 0.75rem 0.5rem;
   border-radius: 10px;
-  background: rgba(30, 41, 59, 0.4);
+  background: var(--surface-card-subtle);
   border: 1px solid transparent;
   position: relative;
   transition: all 0.3s ease;
@@ -182,8 +312,8 @@ header p {
 input, select, textarea {
   width: 100%;
   padding: 0.8rem 1rem;
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid var(--surface-border);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 10px;
   color: var(--text-primary);
   font-family: inherit;
@@ -260,6 +390,42 @@ button.primary-btn:disabled {
   border: 1px solid rgba(148, 163, 184, 0.4);
 }
 
+/* Light Theme Badges & Element Overrides */
+[data-theme="light"] .badge-high {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+[data-theme="light"] .badge-ambiguous {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+[data-theme="light"] .badge-low {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+[data-theme="light"] .badge-rejected {
+  background: rgba(100, 116, 139, 0.12);
+  color: #475569;
+  border-color: rgba(100, 116, 139, 0.35);
+}
+
+[data-theme="light"] .custom-table tr:hover td {
+  background: rgba(15, 23, 42, 0.03);
+}
+
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4 {
+  color: var(--text-primary);
+}
+
 /* Score Breakdown Grid */
 .score-grid {
   display: grid;
@@ -269,7 +435,7 @@ button.primary-btn:disabled {
 }
 
 .score-cell {
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--surface-card);
   border: 1px solid var(--surface-border);
   padding: 0.6rem;
   border-radius: 8px;
@@ -286,23 +452,26 @@ button.primary-btn:disabled {
 .score-cell .value {
   font-size: 1.15rem;
   font-weight: 700;
-  color: #38bdf8;
+  color: var(--accent-color);
   margin-top: 0.2rem;
 }
 
 /* Evidence Cards */
 .evidence-card {
-  background: rgba(15, 23, 42, 0.5);
+  background: var(--surface-card);
   border-left: 3px solid var(--accent-color);
   padding: 0.85rem;
   border-radius: 0 8px 8px 0;
   margin-top: 0.75rem;
   font-size: 0.88rem;
+  border-top: 1px solid var(--surface-border);
+  border-right: 1px solid var(--surface-border);
+  border-bottom: 1px solid var(--surface-border);
 }
 
 .evidence-card .evidence-title {
   font-weight: 600;
-  color: #93c5fd;
+  color: var(--accent-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -329,27 +498,108 @@ button.primary-btn:disabled {
 }
 
 .custom-table th {
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--surface-card-subtle);
   color: var(--text-secondary);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   font-size: 0.75rem;
   letter-spacing: 0.04em;
 }
 
-.custom-table tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+.custom-table td {
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 /* JSON Code Block */
 pre.json-viewer {
-  background: #080c15;
+  background: var(--code-bg);
   border: 1px solid var(--surface-border);
   border-radius: 10px;
   padding: 1.25rem;
   overflow-x: auto;
   font-family: 'Fira Code', 'Consolas', monospace;
   font-size: 0.85rem;
-  color: #a5f3fc;
+  color: var(--code-text);
   max-height: 450px;
 }
+
+/* ==========================================================================
+   Clinical Informational Components & High-Contrast Boxes
+   ========================================================================== */
+
+.clinical-notice-box {
+  padding: 0.85rem 1.15rem;
+  background: var(--notice-bg);
+  border-left: 4px solid var(--notice-border);
+  border-top: 1px solid var(--surface-border);
+  border-right: 1px solid var(--surface-border);
+  border-bottom: 1px solid var(--surface-border);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--notice-text);
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.clinical-notice-box .notice-title {
+  color: var(--notice-title);
+  font-weight: 700;
+  margin-right: 0.35rem;
+}
+
+.concept-relevance-box {
+  font-size: 0.82rem;
+  color: var(--relevance-text);
+  background: var(--relevance-bg);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--relevance-border);
+  line-height: 1.5;
+}
+
+.concept-relevance-box .relevance-title {
+  color: var(--relevance-strong);
+  font-weight: 700;
+  margin-right: 0.25rem;
+}
+
+.verbatim-quote-box {
+  margin: 0.45rem 0 0 0;
+  padding: 0.55rem 0.75rem;
+  border-left: 3px solid var(--quote-border);
+  background: var(--quote-bg);
+  color: var(--quote-text);
+  font-style: italic;
+  font-size: 0.78rem;
+  line-height: 1.48;
+  border-radius: 0 6px 6px 0;
+  border-top: 1px solid var(--surface-border);
+  border-right: 1px solid var(--surface-border);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.badge-grounded {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  background: var(--badge-selfcare-bg);
+  color: var(--badge-selfcare-text);
+  border: 1px solid var(--badge-selfcare-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-animate {
+  animation: spin 1s linear infinite;
+}
+
+

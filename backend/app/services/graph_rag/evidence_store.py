@@ -15,6 +15,10 @@ class EvidenceRecord(BaseModel):
     source_url: str
     text: str
     concept_ids: List[str] = Field(default_factory=list)
+    publication_info: Optional[str] = None
+    passage_location: Optional[str] = None
+    url_verified: Optional[bool] = None
+    claim_type: Optional[str] = None
 
 class EvidenceStore:
     """
@@ -101,11 +105,13 @@ class EvidenceStore:
         source_term: str,
         candidate_title: str,
         candidate_code: Optional[str] = None,
-        graph_symptoms: Optional[List[str]] = None
+        graph_symptoms: Optional[List[str]] = None,
+        claim_type: Optional[str] = None
     ) -> List[EvidenceRecord]:
         """
         Retrieves authentic clinical guidelines and reference evidence specifically
         applicable to care guidance, self-care, and triage/warning signs.
+        Optionally filters/prioritizes by claim_type ('SELF_CARE_GUIDANCE' vs 'WARNING_SIGNS_AND_TRIAGE').
         """
         search_terms = [source_term, candidate_title]
         if candidate_code:
@@ -122,6 +128,22 @@ class EvidenceStore:
                 text_words = set(w.lower() for w in f"{record.title} {record.text}".split() if len(w) > 3)
                 if len(query_words.intersection(text_words)) >= 2:
                     matched.append(record)
+
+        # If claim_type specified, prioritize or filter matching records
+        if claim_type:
+            claim_matched = [r for r in matched if r.claim_type == claim_type]
+            if claim_matched:
+                return claim_matched
+            # Fallback to text matching for the claim type
+            if claim_type == "SELF_CARE_GUIDANCE":
+                text_matched = [r for r in matched if any(k in r.text.lower() for k in ["rest", "fluid", "hydration", "stay at home", "self-care", "supportive"])]
+                if text_matched:
+                    return text_matched
+            elif claim_type == "WARNING_SIGNS_AND_TRIAGE":
+                text_matched = [r for r in matched if any(k in r.text.lower() for k in ["urgent", "emergency", "warning", "red flag", "danger", "referral", "triage"])]
+                if text_matched:
+                    return text_matched
+
         return matched
 
 # Global singleton instance
