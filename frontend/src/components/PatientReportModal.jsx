@@ -52,46 +52,19 @@ export default function PatientReportModal({
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'var(--modal-overlay)',
-        backdropFilter: 'blur(8px)',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1.5rem'
-      }}
-    >
-      <div
-        className="glass-panel"
-        style={{
-          width: '100%',
-          maxWidth: '960px',
-          maxHeight: '92vh',
-          display: 'flex',
-          flexDirection: 'column',
-          borderRadius: '12px',
-          boxShadow: 'var(--card-shadow)',
-          border: '1px solid var(--surface-border)',
-          background: 'var(--modal-bg)',
-          overflow: 'hidden'
-        }}
-      >
+    <div className="modal-overlay-responsive">
+      <div className="modal-card-responsive">
         {/* Modal Header */}
         <div
           style={{
-            padding: '1.25rem 1.5rem',
+            padding: '1rem 1.25rem',
             borderBottom: '1px solid var(--surface-border)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            background: 'var(--modal-header-bg)'
+            background: 'var(--modal-header-bg)',
+            flexWrap: 'wrap',
+            gap: '0.75rem'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -214,7 +187,7 @@ export default function PatientReportModal({
           </div>
 
           {/* Section 3 & 4: Side-by-Side Diagnostic Terminology Mapping */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem' }}>
+          <div className="diagnosis-comparison-grid">
             {/* Section 3: Original Ayurveda / NAMASTE */}
             <div style={{ background: 'var(--surface-card)', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>
               <h4 style={{ fontSize: '0.95rem', color: 'var(--purple-accent)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>

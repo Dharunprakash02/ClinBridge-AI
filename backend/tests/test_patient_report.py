@@ -191,7 +191,7 @@ def test_fhir_and_report_consistency():
     assert cond_res["code"]["coding"][0]["code"] == report.original_ayurveda_diagnosis.source_code
     assert cond_res["code"]["coding"][1]["code"] == report.mapped_icd11_concept.target_code
 
-def test_api_report_endpoint():
+def test_api_report_endpoint(auth_headers):
     """Tests POST /reports/patient-mapping HTTP endpoint."""
     payload = {
         "patient": {
@@ -210,7 +210,7 @@ def test_api_report_endpoint():
         }
     }
 
-    res = client.post("/reports/patient-mapping", json=payload)
+    res = client.post("/reports/patient-mapping", json=payload, headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert data["report_title"] == "ClinBridge AI — Patient Terminology Mapping Report"

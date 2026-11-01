@@ -33,4 +33,10 @@ class Config:
     WHO_API_BASE_URL = os.getenv("WHO_API_BASE_URL", "https://id.who.int/icd/entity")
     WHO_API_MMS_URL = os.getenv("WHO_API_MMS_URL", "https://id.who.int/icd/release/11/2026-01/mms")
 
+    # JWT Authentication & Security
+    JWT_SECRET_KEY = _get_env_value("JWT_SECRET_KEY") or "clinbridge-ai-enterprise-hipaa-compliant-secret-key-2026-prod-jwt-token"
+    JWT_ALGORITHM = _get_env_value("JWT_ALGORITHM") or "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES = int(_get_env_value("ACCESS_TOKEN_EXPIRE_MINUTES") or "60")
+    REFRESH_TOKEN_EXPIRE_DAYS = int(_get_env_value("REFRESH_TOKEN_EXPIRE_DAYS") or "7")
+
 config = Config()

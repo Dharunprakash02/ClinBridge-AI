@@ -18,8 +18,8 @@ def test_health_check():
     assert data["status"] == "healthy"
     assert "knowledge_graph" in data["capabilities"]
 
-def test_execute_mapping_pipeline():
-    response = client.post("/mapping", json={"term": "Jwara", "code": "SR11"})
+def test_execute_mapping_pipeline(auth_headers):
+    response = client.post("/mapping", json={"term": "Jwara", "code": "SR11"}, headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["source_term"] is not None
@@ -33,21 +33,21 @@ def test_execute_mapping_pipeline():
     assert "evidence" in top["scores"]
     assert "explanation" in top
 
-def test_explain_candidate():
+def test_explain_candidate(auth_headers):
     payload = {
         "source_term": "Jwara",
         "source_code": "SR11",
         "candidate_code": "MG26",
         "candidate_title": "Fever, unspecified"
     }
-    response = client.post("/mapping/explain", json=payload)
+    response = client.post("/mapping/explain", json=payload, headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["selected_candidate"] == "Fever, unspecified"
     assert "why_selected" in data
     assert "evidence" in data
 
-def test_record_review_decision_and_history():
+def test_record_review_decision_and_history(reviewer_headers):
     payload = {
         "source_term": "Jwara",
         "source_code": "SR11",
@@ -58,7 +58,7 @@ def test_record_review_decision_and_history():
         "confidence": 0.92,
         "decision_class": "HIGH_CONFIDENCE"
     }
-    response = client.post("/mapping/review", json=payload)
+    response = client.post("/mapping/review", json=payload, headers=reviewer_headers)
     assert response.status_code == 200
     assert response.json()["status"] == "success"
 

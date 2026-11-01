@@ -13,7 +13,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 
-const API_BASE = 'http://127.0.0.1:8000/api/v1';
+import { API_BASE } from '../config/api';
 
 export default function CareSuggestionsCard({
   candidate,
@@ -131,7 +131,7 @@ export default function CareSuggestionsCard({
 
       {/* Two Grounded Suggestions Display */}
       {!loading && !error && !isUncertain && data?.status === 'SUCCESS' && data?.suggestions?.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
+        <div className="diagnosis-comparison-grid">
           {data.suggestions.slice(0, 2).map((sugg, idx) => {
             const isSelfCare = sugg.type === 'SELF_CARE_GUIDANCE';
             const badgeBg = isSelfCare ? 'var(--badge-selfcare-bg)' : 'var(--badge-triage-bg)';

@@ -1,9 +1,12 @@
+import logging
+import uuid
+import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 
-from backend.app.api.dependencies import get_db
-from backend.app.db.models import NamasteCode, HybridMappingResult, MappingDecision, Icd11Code
+from backend.app.api.dependencies import get_db, get_current_user, require_roles
+from backend.app.db.models import NamasteCode, HybridMappingResult, MappingDecision, Icd11Code, User, FhirBundle
 from backend.app.services.icd_service import icd_service
 from backend.app.services.mapping_service import mapping_service
 from backend.app.services.mapping_pipeline import mapping_pipeline_service
@@ -21,10 +24,14 @@ from backend.app.schemas.schemas import (
     ExplainRequest,
     ReviewMappingRequest,
     CareSuggestionsRequest,
-    PatientReportRequest
+    PatientReportRequest,
+    UploadReportRequest,
+    UpdateVerificationStatusRequest
 )
 from backend.app.fhir.bundle import generate_clinical_bundle, validate_fhir_bundle_structure
 from backend.app.services.reporting import patient_report_generator
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -53,7 +60,7 @@ def health_check():
 # Full Mapping Pipeline (GraphRAG + Uncertainty + Rule Gate)
 # ---------------------------------------------------------
 @router.post("/mapping", response_model=MappingPipelineResponse)
-def execute_mapping_pipeline(request: MappingRequest, db: Session = Depends(get_db)):
+def execute_mapping_pipeline(request: MappingRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Executes end-to-end mapping pipeline:
     Retrieval -> KG Expansion -> Rule Gate -> Graph-Aware Ranking -> Evidence Grounding -> Uncertainty Evaluation.
@@ -69,7 +76,7 @@ def execute_mapping_pipeline(request: MappingRequest, db: Session = Depends(get_
 # On-Demand Grounded Explanation
 # ---------------------------------------------------------
 @router.post("/mapping/explain")
-def generate_candidate_explanation(request: ExplainRequest, db: Session = Depends(get_db)):
+def generate_candidate_explanation(request: ExplainRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Generates a structured, evidence-grounded explanation for a candidate."""
     source_concept = {"term": request.source_term, "code": request.source_code or ""}
     candidate = {"code": request.candidate_code, "title": request.candidate_title}
@@ -88,13 +95,13 @@ def generate_candidate_explanation(request: ExplainRequest, db: Session = Depend
         scores=scores,
         confidence=0.87
     )
-    return explanation.dict()
+    return explanation.model_dump() if hasattr(explanation, 'model_dump') else explanation.dict()
 
 # ---------------------------------------------------------
 # Human-in-the-Loop Review & Audit
 # ---------------------------------------------------------
 @router.post("/mapping/review")
-def record_review_decision(request: ReviewMappingRequest, db: Session = Depends(get_db)):
+def record_review_decision(request: ReviewMappingRequest, db: Session = Depends(get_db), current_user: User = Depends(require_roles("reviewer", "admin"))):
     """Records reviewer Accept, Modify, or Reject action into the audit trail."""
     decision = MappingDecision(
         source_term=request.source_term,
@@ -106,7 +113,9 @@ def record_review_decision(request: ReviewMappingRequest, db: Session = Depends(
         decision_class=request.decision_class or "REVIEWED",
         reviewer_action=request.action.upper(),
         reviewer_comment=request.comment,
-        evidence_used=request.evidence_used
+        evidence_used=request.evidence_used,
+        user_id=current_user.id,
+        user_email=current_user.email
     )
     db.add(decision)
     db.commit()
@@ -145,7 +154,7 @@ def get_graph_context(concept_id: str):
     context = graph_query_service.get_concept_context(concept_id)
     if not context:
         raise HTTPException(status_code=404, detail=f"Concept '{concept_id}' not found in Knowledge Graph.")
-    return context.dict()
+    return context.model_dump() if hasattr(context, 'model_dump') else context.dict()
 
 # ---------------------------------------------------------
 # Evidence Store & Direct GraphRAG
@@ -156,7 +165,7 @@ def get_concept_evidence(concept_id: str):
     records = evidence_store.retrieve_by_concepts([concept_id])
     if not records:
         records = evidence_store.retrieve_by_text(concept_id, limit=3)
-    return [r.dict() for r in records]
+    return [r.model_dump() if hasattr(r, 'model_dump') else r.dict() for r in records]
 
 @router.post("/rag/explain")
 def run_direct_rag_explain(payload: Dict[str, Any]):
@@ -173,7 +182,7 @@ def run_direct_rag_explain(payload: Dict[str, Any]):
         scores={"textual": 0.85, "semantic": 0.90, "graph_consistency": 0.88, "evidence_support": 0.82, "final": 0.87},
         confidence=0.88
     )
-    return res.dict()
+    return res.model_dump() if hasattr(res, 'model_dump') else res.dict()
 
 @router.post("/care-suggestions")
 def get_care_suggestions(payload: CareSuggestionsRequest):
@@ -188,7 +197,7 @@ def get_care_suggestions(payload: CareSuggestionsRequest):
         decision_class=payload.decision_class or "AUTO_ACCEPTED",
         graph_context=payload.graph_context
     )
-    return res.dict()
+    return res.model_dump() if hasattr(res, 'model_dump') else res.dict()
 
 # ---------------------------------------------------------
 # Evaluation & Benchmark Metrics
@@ -249,6 +258,7 @@ def trigger_evaluation_run():
 # Legacy Search, Translate & FHIR Endpoints
 # ---------------------------------------------------------
 @router.get("/terminology/search")
+@router.get("/search")
 def search_terminology(q: str = Query(..., min_length=2), db: Session = Depends(get_db)):
     """Search NAMASTE codes by term or code."""
     results = db.query(NamasteCode).filter(
@@ -299,22 +309,26 @@ def translate_code(source_code: str, db: Session = Depends(get_db)):
     return response
 
 @router.get("/fhir/CodeSystem")
-def get_fhir_codesystem(db: Session = Depends(get_db)):
+@router.get("/fhir/CodeSystem/{system_id}")
+def get_fhir_codesystem(system_id: Optional[str] = None, db: Session = Depends(get_db)):
     """Retrieve the NAMASTE terminology as a FHIR CodeSystem."""
     codes = db.query(NamasteCode).limit(500).all()
     return generate_namaste_codesystem(codes)
 
 @router.get("/fhir/ConceptMap")
-def get_fhir_conceptmap(db: Session = Depends(get_db)):
+@router.get("/fhir/ConceptMap/{map_id}")
+def get_fhir_conceptmap(map_id: Optional[str] = None, db: Session = Depends(get_db)):
     """Retrieve the NAMASTE to ICD-11 mapping as a FHIR ConceptMap."""
     mappings = db.query(HybridMappingResult).all()
     return generate_concept_map(mappings)
 
 @router.post("/fhir/generate-bundle")
+@router.post("/fhir/clinical-bundle")
 def generate_bundle(
     request: GenerateBundleRequest,
     raw_bundle: bool = Query(False, description="Return raw FHIR Bundle JSON without technical validation envelope"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Generates an HL7 FHIR R4 Transaction Bundle with Patient and Condition resources.
@@ -395,11 +409,53 @@ def generate_bundle(
 
     val_res = validate_fhir_bundle_structure(bundle)
 
+    # Assign standard bundle ID
+    bundle_id = bundle.get("id") or f"bundle-{uuid.uuid4().hex[:12]}"
+    bundle["id"] = bundle_id
+
+    patient_name = f"{patient_dict.get('first_name', '')} {patient_dict.get('last_name', '')}".strip() or "Unknown Patient"
+    target_code = translations[0]["code"] if translations else None
+    target_title = translations[0]["display"] if translations else None
+
+    # Persist bundle to database history
+    saved_record = None
+    try:
+        new_bundle_record = FhirBundle(
+            bundle_id=bundle_id,
+            bundle_type=bundle.get("type", "transaction"),
+            bundle_json=bundle,
+            user_id=current_user.id if current_user else None,
+            user_email=current_user.email if current_user else None,
+            patient_name=patient_name,
+            patient_id=str(patient_dict.get("patient_id") or patient_dict.get("id") or ""),
+            patient_gender=str(patient_dict.get("gender") or "unknown"),
+            patient_birth_date=str(patient_dict.get("birth_date") or ""),
+            namaste_code=request.namaste_code,
+            namaste_term=condition_term,
+            icd11_code=target_code,
+            icd11_title=target_title,
+            confidence_score=0.95,
+            decision_class=decision_class,
+            clinical_verification_status=request.clinical_verification_status or "unconfirmed",
+            source_type="GENERATED",
+            structure_valid=val_res["is_valid"],
+            notes=f"Clinical Bundle generated by {current_user.full_name} ({current_user.role})" if current_user else "Generated"
+        )
+        db.add(new_bundle_record)
+        db.commit()
+        db.refresh(new_bundle_record)
+        saved_record = new_bundle_record
+    except Exception as db_err:
+        db.rollback()
+        print(f"Notice: Failed to persist generated bundle: {db_err}")
+
     if raw_bundle:
         return bundle
 
     return {
         "bundle": bundle,
+        "bundle_id": bundle_id,
+        "record_id": saved_record.id if saved_record else None,
         "structure_valid": val_res["is_valid"],
         "validation_errors": val_res["errors"],
         "validation_warnings": val_res["warnings"],
@@ -407,7 +463,7 @@ def generate_bundle(
     }
 
 @router.post("/reports/patient-mapping")
-def generate_patient_mapping_report(request: PatientReportRequest):
+def generate_patient_mapping_report(request: PatientReportRequest, current_user: User = Depends(get_current_user)):
     """
     Generates a complete, professional patient terminology-mapping report
     covering all 10 standard clinical sections.
@@ -421,9 +477,346 @@ def generate_patient_mapping_report(request: PatientReportRequest):
             candidate=request.candidate,
             pipeline_data=request.pipeline_data
         )
-        return report.dict()
+        return report.model_dump() if hasattr(report, 'model_dump') else report.dict()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Report generation error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate patient mapping report: {e}")
+
+
+# ---------------------------------------------------------
+
+def _get_bundle_record(db: Session, bundle_id: str) -> Optional[FhirBundle]:
+    """Helper to retrieve a FhirBundle by its string bundle_id or numeric primary key."""
+    if str(bundle_id).isdigit():
+        return db.query(FhirBundle).filter(
+            (FhirBundle.bundle_id == bundle_id) | (FhirBundle.id == int(bundle_id))
+        ).first()
+    return db.query(FhirBundle).filter(FhirBundle.bundle_id == bundle_id).first()
+
+# FHIR Medical Reports Integration & History Endpoints
+# ---------------------------------------------------------
+@router.get("/fhir/history")
+def get_fhir_history(
+    search: Optional[str] = Query(None, description="Search by patient name, condition term, or codes"),
+    source_type: Optional[str] = Query(None, description="Filter by GENERATED or UPLOADED"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(FhirBundle)
+    
+    if source_type and source_type.upper() != "ALL":
+        query = query.filter(FhirBundle.source_type == source_type.upper())
+        
+    if search and search.strip():
+        term = f"%{search.strip()}%".lower()
+        query = query.filter(
+            (FhirBundle.patient_name.ilike(term)) |
+            (FhirBundle.patient_id.ilike(term)) |
+            (FhirBundle.namaste_code.ilike(term)) |
+            (FhirBundle.namaste_term.ilike(term)) |
+            (FhirBundle.icd11_code.ilike(term)) |
+            (FhirBundle.icd11_title.ilike(term)) |
+            (FhirBundle.bundle_id.ilike(term))
+        )
+        
+    total_count = query.count()
+    records = query.order_by(FhirBundle.created_at.desc()).offset(offset).limit(limit).all()
+    
+    # Compute summary metrics
+    generated_count = db.query(FhirBundle).filter(FhirBundle.source_type == "GENERATED").count()
+    uploaded_count = db.query(FhirBundle).filter(FhirBundle.source_type == "UPLOADED").count()
+    compliant_count = db.query(FhirBundle).filter(FhirBundle.structure_valid == True).count()
+    
+    items = []
+    for r in records:
+        items.append({
+            "id": r.id,
+            "bundle_id": r.bundle_id,
+            "bundle_type": r.bundle_type,
+            "patient_name": r.patient_name or "Unknown Patient",
+            "patient_id": r.patient_id,
+            "patient_gender": r.patient_gender or "unknown",
+            "patient_birth_date": r.patient_birth_date,
+            "namaste_code": r.namaste_code or "NAMC-AYU",
+            "namaste_term": r.namaste_term or "Ayurveda Condition",
+            "icd11_code": r.icd11_code,
+            "icd11_title": r.icd11_title,
+            "confidence_score": r.confidence_score or 0.0,
+            "decision_class": r.decision_class or "AUTO_ACCEPTED",
+            "clinical_verification_status": r.clinical_verification_status or "unconfirmed",
+            "source_type": r.source_type or "GENERATED",
+            "structure_valid": r.structure_valid,
+            "notes": r.notes,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "user_email": r.user_email,
+            "bundle": r.bundle_json
+        })
+        
+    return {
+        "total_count": total_count,
+        "generated_count": generated_count,
+        "uploaded_count": uploaded_count,
+        "compliant_count": compliant_count,
+        "items": items
+    }
+
+@router.get("/fhir/bundles/{bundle_id}")
+def get_fhir_bundle(
+    bundle_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    record = _get_bundle_record(db, bundle_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Medical report / FHIR bundle record not found.")
+    return {
+        "id": record.id,
+        "bundle_id": record.bundle_id,
+        "bundle_type": record.bundle_type,
+        "patient_name": record.patient_name,
+        "patient_id": record.patient_id,
+        "patient_gender": record.patient_gender,
+        "patient_birth_date": record.patient_birth_date,
+        "namaste_code": record.namaste_code,
+        "namaste_term": record.namaste_term,
+        "icd11_code": record.icd11_code,
+        "icd11_title": record.icd11_title,
+        "confidence_score": record.confidence_score,
+        "decision_class": record.decision_class,
+        "clinical_verification_status": record.clinical_verification_status,
+        "source_type": record.source_type,
+        "structure_valid": record.structure_valid,
+        "notes": record.notes,
+        "created_at": record.created_at.isoformat() if record.created_at else None,
+        "user_email": record.user_email,
+        "bundle": record.bundle_json
+    }
+
+@router.post("/fhir/upload-report")
+def upload_medical_report(
+    payload: UploadReportRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Integrates external patient medical reports consisting of FHIR R4 Bundle details.
+    Supports either:
+    1. A raw FHIR R4 Transaction/Collection Bundle JSON
+    2. Structured clinical parameters for an external patient encounter
+    """
+    bundle = None
+    patient_name = "Unknown Patient"
+    patient_id = None
+    patient_gender = "unknown"
+    patient_birth_date = None
+    namaste_code = payload.condition_code or "EXTERNAL-CLINICAL"
+    namaste_term = payload.condition_term or "External Clinical Condition"
+    icd11_code = payload.icd11_code
+    icd11_title = payload.icd11_title or icd11_code
+    
+    if payload.raw_bundle:
+        bundle = payload.raw_bundle
+        val_res = validate_fhir_bundle_structure(bundle)
+        if not val_res["is_valid"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Uploaded bundle failed FHIR R4 validation: {'; '.join(val_res['errors'])}"
+            )
+        # Extract patient and condition from raw bundle
+        entries = bundle.get("entry", [])
+        for entry in entries:
+            res = entry.get("resource", {})
+            if res.get("resourceType") == "Patient":
+                names = res.get("name", [])
+                if names:
+                    first = " ".join(names[0].get("given", []))
+                    last = names[0].get("family", "")
+                    patient_name = f"{first} {last}".strip() or "Patient"
+                patient_gender = res.get("gender", "unknown")
+                patient_birth_date = res.get("birthDate")
+                identifiers = res.get("identifier", [])
+                if identifiers:
+                    patient_id = identifiers[0].get("value")
+            elif res.get("resourceType") == "Condition":
+                code_obj = res.get("code", {})
+                codings = code_obj.get("coding", [])
+                for c in codings:
+                    if "namaste" in c.get("system", "").lower():
+                        namaste_code = c.get("code", namaste_code)
+                    elif "icd" in c.get("system", "").lower():
+                        icd11_code = c.get("code", icd11_code)
+                        icd11_title = c.get("display", icd11_title)
+                if code_obj.get("text"):
+                    namaste_term = code_obj.get("text")
+    else:
+        # Generate bundle from structured parameters
+        if not payload.patient_first_name or not payload.patient_last_name:
+            raise HTTPException(status_code=400, detail="Patient first name and last name are required for report integration.")
+            
+        patient_name = f"{payload.patient_first_name.strip()} {payload.patient_last_name.strip()}"
+        patient_gender = payload.patient_gender or "unknown"
+        patient_birth_date = payload.patient_birth_date
+        patient_id = payload.patient_id
+        
+        patient_data = {
+            "first_name": payload.patient_first_name.strip(),
+            "last_name": payload.patient_last_name.strip(),
+            "gender": patient_gender,
+            "birth_date": patient_birth_date,
+            "patient_id": patient_id
+        }
+        
+        translations = []
+        if icd11_code:
+            translations.append({
+                "code": icd11_code,
+                "target_uri": f"http://id.who.int/icd/release/11/mms/{icd11_code}",
+                "icd11_title": icd11_title or icd11_code,
+                "display": icd11_title or icd11_code,
+                "system": "http://id.who.int/icd/release/11/mms"
+            })
+            
+        bundle = generate_clinical_bundle(
+            patient_data=patient_data,
+            condition_code=namaste_code,
+            condition_term=namaste_term,
+            translations=translations,
+            is_confirmed=bool(icd11_code),
+            decision_class=payload.decision_class or "AUTO_ACCEPTED",
+            clinical_verification_status=payload.clinical_verification_status or "unconfirmed"
+        )
+        val_res = validate_fhir_bundle_structure(bundle)
+
+    bundle_id = bundle.get("id") or f"uploaded-{uuid.uuid4().hex[:12]}"
+    bundle["id"] = bundle_id
+    
+    new_record = FhirBundle(
+        bundle_id=bundle_id,
+        bundle_type=bundle.get("type", "transaction"),
+        bundle_json=bundle,
+        user_id=current_user.id if current_user else None,
+        user_email=current_user.email if current_user else None,
+        patient_name=patient_name,
+        patient_id=patient_id,
+        patient_gender=patient_gender,
+        patient_birth_date=patient_birth_date,
+        namaste_code=namaste_code,
+        namaste_term=namaste_term,
+        icd11_code=icd11_code,
+        icd11_title=icd11_title,
+        confidence_score=payload.confidence_score or 0.90,
+        decision_class=payload.decision_class or "AUTO_ACCEPTED",
+        clinical_verification_status=payload.clinical_verification_status or "unconfirmed",
+        source_type="UPLOADED",
+        structure_valid=val_res["is_valid"],
+        notes=payload.notes or f"External medical report uploaded and integrated by {current_user.full_name} ({current_user.role})"
+    )
+    db.add(new_record)
+    db.commit()
+    db.refresh(new_record)
+    
+    return {
+        "success": True,
+        "message": "External medical report successfully integrated and stored in database.",
+        "record_id": new_record.id,
+        "bundle_id": new_record.bundle_id,
+        "patient_name": new_record.patient_name,
+        "structure_valid": val_res["is_valid"],
+        "bundle": bundle
+    }
+
+@router.delete("/fhir/bundles/{bundle_id}")
+def delete_fhir_bundle(
+    bundle_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("reviewer", "admin"))
+):
+    record = _get_bundle_record(db, bundle_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Medical report not found.")
+    db.delete(record)
+    db.commit()
+    return {"success": True, "message": f"Medical report {bundle_id} deleted successfully."}
+
+
+@router.patch("/fhir/bundles/{bundle_id}/verification-status")
+def update_bundle_verification_status(
+    bundle_id: str,
+    payload: UpdateVerificationStatusRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Allows treating Clinicians, Clinical Reviewers, and Administrators to endorse
+    and officially transition a medical diagnosis status from 'unconfirmed' to 'confirmed'
+    (or provisional/refuted), updating both the database and the inner HL7 FHIR R4 Condition resource.
+    """
+    valid_statuses = {"confirmed", "unconfirmed", "provisional", "refuted"}
+    new_status = payload.status.lower().strip()
+    if new_status not in valid_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid verification status '{payload.status}'. Must be one of: {', '.join(valid_statuses)}"
+        )
+
+    record = _get_bundle_record(db, bundle_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Medical report / FHIR bundle record not found.")
+
+    record.clinical_verification_status = new_status
+    
+    timestamp_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    endorsement_msg = f"Status updated to '{new_status}' by {current_user.full_name} ({current_user.role}) on {timestamp_str}."
+    if payload.endorsement_note:
+        endorsement_msg += f" Note: {payload.endorsement_note}"
+
+    # Append to record notes
+    if record.notes:
+        record.notes = f"{record.notes} | {endorsement_msg}"
+    else:
+        record.notes = endorsement_msg
+
+    # Also synchronize the inner FHIR R4 Bundle Condition.verificationStatus
+    if record.bundle_json and isinstance(record.bundle_json, dict):
+        import copy
+        from sqlalchemy.orm.attributes import flag_modified
+        bundle_copy = copy.deepcopy(record.bundle_json)
+        entries = bundle_copy.get("entry", [])
+        for entry in entries:
+            resource = entry.get("resource", {})
+            if resource.get("resourceType") == "Condition":
+                display_label = new_status.capitalize()
+                resource["verificationStatus"] = {
+                    "coding": [
+                        {
+                            "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+                            "code": new_status,
+                            "display": display_label
+                        }
+                    ],
+                    "text": display_label
+                }
+                existing_notes = resource.get("note", [])
+                existing_notes.append({
+                    "text": f"Clinical Verification Endorsement: {endorsement_msg}"
+                })
+                resource["note"] = existing_notes
+        record.bundle_json = bundle_copy
+        flag_modified(record, "bundle_json")
+
+    db.commit()
+    db.refresh(record)
+
+    return {
+        "success": True,
+        "message": f"Clinical verification status successfully updated to '{new_status}'.",
+        "bundle_id": record.bundle_id,
+        "new_status": new_status,
+        "endorsed_by": current_user.full_name,
+        "endorser_role": current_user.role,
+        "notes": record.notes
+    }

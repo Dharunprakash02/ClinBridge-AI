@@ -31,11 +31,11 @@ def test_fhir_conceptmap():
     assert data["resourceType"] == "ConceptMap"
     assert data["status"] == "active"
 
-def test_generate_bundle_invalid_payload():
+def test_generate_bundle_invalid_payload(auth_headers):
     # Test bundle generation with missing patient data
     payload = {
         "namaste_code": "EC-3.8.23"
         # patient data missing
     }
-    response = client.post("/api/v1/fhir/generate-bundle", json=payload)
+    response = client.post("/api/v1/fhir/generate-bundle", json=payload, headers=auth_headers)
     assert response.status_code == 422 # Validation error

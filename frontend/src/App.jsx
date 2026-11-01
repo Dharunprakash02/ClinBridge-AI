@@ -14,7 +14,16 @@ import {
   FileText,
   Printer,
   Sun,
-  Moon
+  Moon,
+  User,
+  LogOut,
+  ChevronDown,
+  Building2,
+  Lock,
+  Layers,
+  ArrowRight,
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import PipelineVisualizer from './components/PipelineVisualizer';
 import ExplainabilityCard from './components/ExplainabilityCard';
@@ -22,12 +31,63 @@ import CareSuggestionsCard from './components/CareSuggestionsCard';
 import HumanReviewModal from './components/HumanReviewModal';
 import ResearchDashboard from './components/ResearchDashboard';
 import PatientReportModal from './components/PatientReportModal';
+import AuthLandingPage from './components/AuthLandingPage';
+import MedicalReportsHistory from './components/MedicalReportsHistory';
+import { useAuth } from './context/AuthContext';
 import { generateAndDownloadPatientReportPdf } from './utils/pdfReportGenerator';
 import './index.css';
 
-const API_BASE = 'http://127.0.0.1:8000/api/v1';
+import { API_BASE } from './config/api';
+
+// Page definitions with Role-Based Access Control (RBAC)
+const ALL_PAGES = [
+  {
+    id: 'search',
+    label: 'Clinical Search & GraphRAG',
+    icon: Search,
+    roles: ['clinician', 'reviewer', 'admin'],
+    desc: 'Terminology Search, Graph Context & Care Suggestions'
+  },
+  {
+    id: 'fhir',
+    label: 'FHIR R4 Bundle Studio',
+    icon: FileJson,
+    roles: ['clinician', 'admin'],
+    desc: 'Generate & Validate HL7 FHIR R4 Transaction Bundles'
+  },
+  {
+    id: 'history',
+    label: 'Medical Reports Integration & History',
+    icon: Layers,
+    roles: ['clinician', 'reviewer', 'admin'],
+    desc: 'Progress Tracking, FHIR Bundle Repository & Report Upload'
+  },
+  {
+    id: 'review',
+    label: 'Audit Trail & Admin Overrides',
+    icon: Shield,
+    roles: ['reviewer', 'admin'],
+    desc: 'Audit Endorsement & Quality Assurance Overrides'
+  },
+  {
+    id: 'research',
+    label: 'Research Evaluation (B1–B6)',
+    icon: BarChart3,
+    roles: ['reviewer', 'admin'],
+    desc: 'Benchmark Metrics & Ablation Study (A1–A5)'
+  }
+];
 
 export default function App() {
+  const {
+    user,
+    isAuthenticated,
+    role,
+    loading,
+    logout,
+    hasRole
+  } = useAuth();
+
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('clinbridge_theme') || 'dark';
   });
@@ -41,12 +101,29 @@ export default function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const [activeTab, setActiveTab] = useState('search'); // 'search' | 'review' | 'fhir' | 'research'
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  // Compute allowed pages based on active user role
+  const userRole = role || 'clinician';
+  const allowedPages = ALL_PAGES.filter((p) => p.roles.includes(userRole));
+
+  // Determine initial active tab
+  const [activeTab, setActiveTab] = useState(() => {
+    if (userRole === 'reviewer') return 'review';
+    return 'search';
+  });
+
+  // Sync active tab when user role changes
+  useEffect(() => {
+    if (allowedPages.length > 0 && !allowedPages.some((p) => p.id === activeTab)) {
+      setActiveTab(allowedPages[0].id);
+    }
+  }, [userRole]);
 
   // Search & Pipeline state
-  const [searchQuery, setSearchQuery] = useState('Jwara');
+  const [searchQuery, setSearchQuery] = useState('');
   const [pipelineLoading, setPipelineLoading] = useState(false);
-  const [pipelineStep, setPipelineStep] = useState(5);
+  const [pipelineStep, setPipelineStep] = useState(0);
   const [pipelineData, setPipelineData] = useState(null);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -56,11 +133,14 @@ export default function App() {
     first_name: 'Ram',
     last_name: 'Kumar',
     gender: 'male',
-    birth_date: '1995-10-15'
+    birth_date: '1995-10-15',
+    patient_id: 'PAT-9021',
+    clinical_verification_status: 'unconfirmed'
   });
   const [bundle, setBundle] = useState(null);
   const [bundleLoading, setBundleLoading] = useState(false);
   const [bundleValidation, setBundleValidation] = useState(null);
+  const [bundleSaveNotice, setBundleSaveNotice] = useState(null);
   const [copied, setCopied] = useState(false);
 
   // Patient Mapping Report state
@@ -68,6 +148,53 @@ export default function App() {
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
 
+  // 1. Loading Splash Screen while checking session
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--bg-gradient)',
+          color: 'var(--text-primary)',
+          fontFamily: "'Inter', sans-serif"
+        }}
+      >
+        <div
+          style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '16px',
+            background: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#ffffff',
+            boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
+            marginBottom: '1.25rem'
+          }}
+        >
+          <Stethoscope size={30} />
+        </div>
+        <div style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '-0.01em' }}>
+          ClinBridge AI Enterprise
+        </div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
+          Verifying institutional authentication & credentials...
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Unauthenticated: Render dedicated Production-Level Authentication Landing Page
+  if (!isAuthenticated) {
+    return <AuthLandingPage theme={theme} toggleTheme={toggleTheme} />;
+  }
+
+  // 3. Authenticated: Render Full Platform with Role-Based Route Access
   const runMappingPipeline = async (e) => {
     if (e) e.preventDefault();
     if (!searchQuery || searchQuery.length < 2) return;
@@ -76,10 +203,10 @@ export default function App() {
     setErrorMessage(null);
     setSelectedCandidate(null);
     setBundle(null);
+    setBundleSaveNotice(null);
     setPipelineStep(0);
 
     try {
-      // Simulate live visual progress step transitions
       const interval = setInterval(() => {
         setPipelineStep((prev) => (prev < 4 ? prev + 1 : prev));
       }, 250);
@@ -93,7 +220,11 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
-      setErrorMessage('Failed to execute mapping pipeline. Please check backend connection.');
+      if (err.response?.status === 401) {
+        logout(false);
+      } else {
+        setErrorMessage('Failed to execute mapping pipeline. Please check backend connection.');
+      }
     } finally {
       setPipelineLoading(false);
     }
@@ -103,6 +234,7 @@ export default function App() {
     if (!selectedCandidate) return;
     setBundleLoading(true);
     setErrorMessage(null);
+    setBundleSaveNotice(null);
     try {
       const payload = {
         patient,
@@ -111,7 +243,8 @@ export default function App() {
         selected_candidate_code: selectedCandidate?.code,
         selected_candidate_title: selectedCandidate?.term || selectedCandidate?.title,
         selected_candidate_uri: selectedCandidate?.uri,
-        force_unverified: false
+        force_unverified: false,
+        clinical_verification_status: patient.clinical_verification_status || 'unconfirmed'
       };
       const res = await axios.post(`${API_BASE}/fhir/generate-bundle`, payload);
       const bundleData = res.data?.bundle || res.data;
@@ -124,12 +257,16 @@ export default function App() {
           disclaimer: res.data.validation_disclaimer
         });
       }
+      setBundleSaveNotice({
+        bundle_id: res.data?.bundle_id || bundleData?.id || 'Saved',
+        message: 'FHIR R4 Bundle successfully generated and stored in Medical Reports Integration & History.'
+      });
       // Pre-fetch aligned patient report data
       fetchPatientReportData();
     } catch (err) {
       console.error('Failed to generate bundle:', err);
       const errDetail = err.response?.data?.detail || 'Failed to generate FHIR Bundle.';
-      alert(`FHIR Bundle Policy Warning: ${errDetail}`);
+      alert(`FHIR Bundle Notice: ${errDetail}`);
     } finally {
       setBundleLoading(false);
     }
@@ -195,35 +332,202 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  // Check if current activeTab is permitted
+  const isTabPermitted = allowedPages.some((p) => p.id === activeTab);
+
   return (
     <div className="app-container">
       {/* Header */}
       <header>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.65rem', borderRadius: '9999px', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--accent-color)', border: '1px solid var(--surface-border)' }}>
               v2.0.0 • AYUSH &harr; WHO ICD-11
             </span>
+            <span className="header-status-badge" style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Shield size={12} color="#10b981" /> Authenticated & RBAC Enforced
+            </span>
           </div>
 
-          <button
-            onClick={toggleTheme}
-            className="theme-toggle-btn"
-            aria-label="Toggle theme"
-            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
-          >
-            {theme === 'dark' ? (
-              <>
-                <Sun size={16} className="theme-icon sun" />
-                <span>Light Theme</span>
-              </>
-            ) : (
-              <>
-                <Moon size={16} className="theme-icon moon" />
-                <span>Dark Theme</span>
-              </>
-            )}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', position: 'relative' }}>
+            {/* User Profile Pill */}
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setUserDropdownOpen((prev) => !prev)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '9999px',
+                  border: '1px solid var(--surface-border)',
+                  background: 'var(--surface-color)',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 500,
+                  boxShadow: 'var(--card-shadow)',
+                  transition: 'all 0.2s ease'
+                }}
+                title="Account and role details"
+              >
+                <div
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background:
+                      userRole === 'admin'
+                        ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)'
+                        : userRole === 'reviewer'
+                        ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+                        : 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 700
+                  }}
+                >
+                  {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user?.full_name || user?.email}
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    padding: '0.12rem 0.45rem',
+                    borderRadius: '4px',
+                    background:
+                      userRole === 'admin'
+                        ? 'rgba(139, 92, 246, 0.18)'
+                        : userRole === 'reviewer'
+                        ? 'rgba(245, 158, 11, 0.18)'
+                        : 'rgba(59, 130, 246, 0.15)',
+                    color:
+                      userRole === 'admin'
+                        ? 'var(--purple-accent)'
+                        : userRole === 'reviewer'
+                        ? 'var(--warning-color)'
+                        : 'var(--accent-color)',
+                    border: `1px solid ${
+                      userRole === 'admin'
+                        ? 'rgba(139, 92, 246, 0.3)'
+                        : userRole === 'reviewer'
+                        ? 'rgba(245, 158, 11, 0.3)'
+                        : 'rgba(59, 130, 246, 0.3)'
+                    }`
+                  }}
+                >
+                  {userRole}
+                </span>
+                <ChevronDown size={14} color="var(--text-muted)" />
+              </button>
+
+              {/* User Dropdown */}
+              {userDropdownOpen && (
+                <>
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 998 }}
+                    onClick={() => setUserDropdownOpen(false)}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      right: 0,
+                      width: '280px',
+                      maxWidth: 'calc(100vw - 1.5rem)',
+                      background: 'var(--surface-color)',
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      border: '1px solid var(--surface-border)',
+                      borderRadius: '10px',
+                      padding: '0.85rem',
+                      boxShadow: '0 16px 36px rgba(0, 0, 0, 0.45)',
+                      zIndex: 999,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.6rem'
+                    }}
+                  >
+                    <div style={{ paddingBottom: '0.5rem', borderBottom: '1px solid var(--surface-border)' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                        {user?.full_name}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                        {user?.email}
+                      </div>
+                      {user?.organization && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                          <Building2 size={12} /> {user.organization}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                      <strong style={{ color: 'var(--text-primary)' }}>Active Role Scope:</strong>{' '}
+                      {userRole === 'admin'
+                        ? 'Complete Governance & Access Overrides (All 5 Platform Workspaces)'
+                        : userRole === 'reviewer'
+                        ? 'Audit Trail Endorsement & Quality Assurance Overrides'
+                        : 'Clinician (Search, Pipeline, Reports, FHIR Export)'}
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        logout(true);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.45rem',
+                        width: '100%',
+                        padding: '0.45rem 0.75rem',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        color: '#f87171',
+                        cursor: 'pointer',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        transition: 'background 0.15s ease'
+                      }}
+                    >
+                      <LogOut size={14} /> Sign Out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="theme-toggle-btn"
+              aria-label="Toggle theme"
+              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun size={16} className="theme-icon sun" />
+                  <span>Light</span>
+                </>
+              ) : (
+                <>
+                  <Moon size={16} className="theme-icon moon" />
+                  <span>Dark</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         <h1>
@@ -231,37 +535,44 @@ export default function App() {
         </h1>
         <p>Context-Aware, Evidence-Grounded Ayurveda/NAMASTE &rarr; ICD-11 Interoperability Platform</p>
 
-        {/* Tab Navigation */}
-        <div className="nav-tabs">
-          <button
-            className={`nav-tab-btn ${activeTab === 'search' ? 'active' : ''}`}
-            onClick={() => setActiveTab('search')}
-          >
-            <Search size={18} /> Clinical Search & GraphRAG
-          </button>
-          <button
-            className={`nav-tab-btn ${activeTab === 'review' ? 'active' : ''}`}
-            onClick={() => setActiveTab('review')}
-          >
-            <Shield size={18} /> Audit Trail & Admin Overrides
-          </button>
-          <button
-            className={`nav-tab-btn ${activeTab === 'fhir' ? 'active' : ''}`}
-            onClick={() => setActiveTab('fhir')}
-          >
-            <FileJson size={18} /> FHIR R4 Bundle Studio
-          </button>
-          <button
-            className={`nav-tab-btn ${activeTab === 'research' ? 'active' : ''}`}
-            onClick={() => setActiveTab('research')}
-          >
-            <BarChart3 size={18} /> Research Evaluation (B1–B6)
-          </button>
+        {/* Dynamic Role-Based Tab Navigation */}
+        <div className="nav-tabs" style={{ flexWrap: 'wrap' }}>
+          {allowedPages.map((page) => {
+            const Icon = page.icon;
+            const isActive = activeTab === page.id;
+            return (
+              <button
+                key={page.id}
+                className={`nav-tab-btn ${isActive ? 'active' : ''}`}
+                onClick={() => setActiveTab(page.id)}
+                title={page.desc}
+              >
+                <Icon size={18} /> {page.label}
+              </button>
+            );
+          })}
         </div>
       </header>
 
-      {/* TAB 1: Clinical Search & Live Pipeline */}
-      {activeTab === 'search' && (
+      {/* RBAC Fallback: If unauthorized tab is somehow targeted */}
+      {!isTabPermitted && (
+        <div className="glass-panel" style={{ padding: '2.5rem', textAlign: 'center', borderColor: '#ef4444' }}>
+          <AlertCircle size={40} color="#ef4444" style={{ margin: '0 auto 1rem auto' }} />
+          <h3 style={{ color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Access Restricted (RBAC Policy)</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '500px', margin: '0 auto 1.5rem auto' }}>
+            Your account role (<strong>{userRole}</strong>) does not have access permissions for this workspace.
+          </p>
+          <button
+            className="primary-btn"
+            onClick={() => setActiveTab(allowedPages[0]?.id || 'search')}
+          >
+            Go to {allowedPages[0]?.label || 'Workspace'}
+          </button>
+        </div>
+      )}
+
+      {/* PAGE 1: Clinical Search & Live Pipeline */}
+      {isTabPermitted && activeTab === 'search' && (
         <div>
           {/* Search Bar */}
           <form onSubmit={runMappingPipeline} className="search-box-container">
@@ -345,7 +656,7 @@ export default function App() {
                 )}
               </div>
 
-              {/* Explainability & Grounding Details for Selected Candidate */}
+              {/* Explainability & Grounding Details */}
               {selectedCandidate && (
                 <ExplainabilityCard
                   candidate={selectedCandidate}
@@ -355,7 +666,7 @@ export default function App() {
                 />
               )}
 
-              {/* AI-Powered Evidence-Grounded Care Suggestions */}
+              {/* Care Suggestions */}
               {selectedCandidate && (
                 <CareSuggestionsCard
                   candidate={selectedCandidate}
@@ -369,26 +680,15 @@ export default function App() {
         </div>
       )}
 
-      {/* TAB 2: Human-in-the-Loop Review Workspace */}
-      {activeTab === 'review' && (
-        <HumanReviewModal
-          candidate={selectedCandidate}
-          sourceTerm={pipelineData?.source_term || searchQuery}
-          onReviewComplete={(action) => {
-            alert(`Mapping decision '${action}' logged into the audit repository.`);
-          }}
-        />
-      )}
-
-      {/* TAB 3: FHIR R4 Bundle Studio */}
-      {activeTab === 'fhir' && (
+      {/* PAGE 2: FHIR R4 Bundle Studio */}
+      {isTabPermitted && activeTab === 'fhir' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Patient Demographic Form */}
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
             <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <FileJson size={20} color="#38bdf8" /> Patient Encounter & FHIR Parameters
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            <div className="fhir-form-grid">
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>First Name</label>
                 <input
@@ -424,6 +724,17 @@ export default function App() {
                   onChange={(e) => setPatient({ ...patient, birth_date: e.target.value })}
                 />
               </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Clinical Verification</label>
+                <select
+                  value={patient.clinical_verification_status || 'unconfirmed'}
+                  onChange={(e) => setPatient({ ...patient, clinical_verification_status: e.target.value })}
+                >
+                  <option value="unconfirmed">unconfirmed (Pending review / labs)</option>
+                  <option value="confirmed">confirmed (Attending Clinician Confirmed)</option>
+                  <option value="provisional">provisional (Provisional Working Diagnosis)</option>
+                </select>
+              </div>
             </div>
 
             <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -455,13 +766,57 @@ export default function App() {
 
               {!selectedCandidate && (
                 <span style={{ fontSize: '0.85rem', color: '#f59e0b' }}>
-                  Please run a search in Tab 1 first to select a verified mapping.
+                  Please run a search in Tab 1 first to select a verified mapping candidate.
                 </span>
               )}
             </div>
+
+            {/* Persistence Confirmation Banner */}
+            {bundleSaveNotice && (
+              <div
+                style={{
+                  marginTop: '1.25rem',
+                  padding: '0.85rem 1.25rem',
+                  borderRadius: '8px',
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  color: 'var(--success-color)',
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <CheckCircle2 size={18} />
+                  <span>{bundleSaveNotice.message}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('history')}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(16, 185, 129, 0.5)',
+                    background: 'rgba(16, 185, 129, 0.2)',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                  }}
+                >
+                  View in Medical Reports History <ArrowRight size={14} />
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Patient Mapping Report Quick Status Card */}
+          {/* Quick Status Card */}
           {reportData && (
             <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid #0284c7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
@@ -533,8 +888,29 @@ export default function App() {
         </div>
       )}
 
-      {/* TAB 4: Research Dashboard (B1 - B6, A1 - A5) */}
-      {activeTab === 'research' && <ResearchDashboard />}
+      {/* PAGE 3: Medical Reports Integration & History (NEW) */}
+      {isTabPermitted && activeTab === 'history' && (
+        <MedicalReportsHistory
+          onViewReportModal={(rep) => {
+            setReportData(rep);
+            setReportModalOpen(true);
+          }}
+        />
+      )}
+
+      {/* PAGE 4: Human-in-the-Loop Review Workspace */}
+      {isTabPermitted && activeTab === 'review' && (
+        <HumanReviewModal
+          candidate={selectedCandidate}
+          sourceTerm={pipelineData?.source_term || searchQuery}
+          onReviewComplete={(action) => {
+            alert(`Mapping decision '${action}' logged into the audit repository.`);
+          }}
+        />
+      )}
+
+      {/* PAGE 5: Research Dashboard (B1 - B6, A1 - A5) */}
+      {isTabPermitted && activeTab === 'research' && <ResearchDashboard />}
 
       {/* Patient Report Modal View */}
       {reportModalOpen && (

@@ -219,7 +219,7 @@ def test_structural_validity_disclaimer_present():
     assert "disclaimer" in val
     assert "does NOT constitute clinical validation" in val["disclaimer"]
 
-def test_api_generate_bundle_returns_validation_metadata_separately():
+def test_api_generate_bundle_returns_validation_metadata_separately(auth_headers):
     """
     Requirement 3: POST /api/v1/fhir/generate-bundle returns technical validation metadata
     (structure_valid, validation_errors) separately in the response envelope,
@@ -239,7 +239,7 @@ def test_api_generate_bundle_returns_validation_metadata_separately():
     }
 
     # Default envelope response
-    res = client.post("/api/v1/fhir/generate-bundle", json=payload)
+    res = client.post("/api/v1/fhir/generate-bundle", json=payload, headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
 
@@ -258,7 +258,7 @@ def test_api_generate_bundle_returns_validation_metadata_separately():
     assert not cond["code"]["coding"][1]["code"].startswith("http")
 
     # Raw bundle query param support
-    res_raw = client.post("/api/v1/fhir/generate-bundle?raw_bundle=true", json=payload)
+    res_raw = client.post("/api/v1/fhir/generate-bundle?raw_bundle=true", json=payload, headers=auth_headers)
     assert res_raw.status_code == 200
     raw_data = res_raw.json()
     assert raw_data["resourceType"] == "Bundle"

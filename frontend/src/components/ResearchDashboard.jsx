@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BarChart3, Layers, CheckCircle2, TrendingUp, AlertCircle, Play, RefreshCw, FileSpreadsheet } from 'lucide-react';
 
-const API_BASE = 'http://127.0.0.1:8000/api/v1';
+import { API_BASE } from '../config/api';
 
 export default function ResearchDashboard() {
   const [data, setData] = useState(null);
@@ -160,7 +160,7 @@ export default function ResearchDashboard() {
       )}
 
       {/* Metrics Overview Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+      <div className="metric-summary-grid">
         <div className="glass-panel" style={{ padding: '1.25rem' }}>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Top-1 Accuracy</div>
           <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--badge-supported-color)', marginTop: '0.25rem' }}>
@@ -202,35 +202,37 @@ export default function ResearchDashboard() {
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '1rem' }}>
           Comparative terminology mapping performance across isolated retrieval and reasoning layers on standard evaluation set.
         </p>
-        <table className="custom-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Configuration</th>
-              <th>Role</th>
-              <th>Top-1 Accuracy</th>
-              <th>MRR</th>
-            </tr>
-          </thead>
-          <tbody>
-            {baselines?.map((b) => {
-              const bAcc = b.top1_accuracy != null ? b.top1_accuracy : b.top1_acc;
-              return (
-                <tr key={b.id} style={{ background: b.id === 'B6' ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
-                  <td style={{ fontWeight: 700, color: b.id === 'B6' ? 'var(--accent-color)' : 'inherit' }}>{b.id}</td>
-                  <td style={{ fontWeight: 600 }}>{b.name}</td>
-                  <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                    {b.id === 'B6' ? 'Proposed Complete System' : b.id.startsWith('B5') ? 'Proposed Graph Layer' : 'Baseline'}
-                  </td>
-                  <td style={{ fontWeight: 700, color: b.id === 'B6' ? 'var(--badge-supported-color)' : 'inherit' }}>
-                    {bAcc != null && !isNaN(bAcc) ? `${(bAcc * 100).toFixed(1)}%` : 'Not Evaluated'}
-                  </td>
-                  <td>{b.mrr != null && !isNaN(b.mrr) ? b.mrr.toFixed(2) : '—'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="table-responsive">
+          <table className="custom-table" style={{ minWidth: '600px' }}>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Configuration</th>
+                <th>Role</th>
+                <th>Top-1 Accuracy</th>
+                <th>MRR</th>
+              </tr>
+            </thead>
+            <tbody>
+              {baselines?.map((b) => {
+                const bAcc = b.top1_accuracy != null ? b.top1_accuracy : b.top1_acc;
+                return (
+                  <tr key={b.id} style={{ background: b.id === 'B6' ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
+                    <td style={{ fontWeight: 700, color: b.id === 'B6' ? 'var(--accent-color)' : 'inherit' }}>{b.id}</td>
+                    <td style={{ fontWeight: 600 }}>{b.name}</td>
+                    <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                      {b.id === 'B6' ? 'Proposed Complete System' : b.id.startsWith('B5') ? 'Proposed Graph Layer' : 'Baseline'}
+                    </td>
+                    <td style={{ fontWeight: 700, color: b.id === 'B6' ? 'var(--badge-supported-color)' : 'inherit' }}>
+                      {bAcc != null && !isNaN(bAcc) ? `${(bAcc * 100).toFixed(1)}%` : 'Not Evaluated'}
+                    </td>
+                    <td>{b.mrr != null && !isNaN(b.mrr) ? b.mrr.toFixed(2) : '—'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Ablation Study (A1 - A5) */}
@@ -256,50 +258,52 @@ export default function ResearchDashboard() {
           </div>
         ) : (
           <>
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Ablation Setup</th>
-                  <th>Isolated / Removed Component</th>
-                  <th>Status</th>
-                  <th>Top-1 Accuracy</th>
-                  <th>Performance Drop (&Delta;)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ablations.map((a) => (
-                  <tr key={a.id} style={{ background: a.id === 'A1' ? 'rgba(59, 130, 246, 0.08)' : 'transparent' }}>
-                    <td style={{ fontWeight: 700, color: a.id === 'A1' ? 'var(--accent-color)' : 'inherit' }}>{a.id}</td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{a.name || a.id}</div>
-                      {a.description && (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem', lineHeight: 1.35 }}>
-                          {a.description}
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                      {a.removed_component || 'None'}
-                    </td>
-                    <td>
-                      <span
-                        className={`badge ${a.status === 'EVALUATED' ? 'badge-high' : 'badge-ambiguous'}`}
-                        style={{ fontSize: '0.72rem' }}
-                      >
-                        {a.status || (a.top1_accuracy != null ? 'EVALUATED' : 'NOT_EVALUATED')}
-                      </span>
-                    </td>
-                    <td style={{ fontWeight: 700, color: a.id === 'A1' ? 'var(--badge-supported-color)' : 'var(--text-primary)' }}>
-                      {formatAccuracy(a)}
-                    </td>
-                    <td style={{ fontWeight: 700, color: a.id === 'A1' ? 'var(--text-muted)' : ((a.performance_drop_pp > 0 || a.performance_drop > 0) ? 'var(--error-color)' : 'var(--text-secondary)') }}>
-                      {formatPerformanceDrop(a)}
-                    </td>
+            <div className="table-responsive">
+              <table className="custom-table" style={{ minWidth: '700px' }}>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Ablation Setup</th>
+                    <th>Isolated / Removed Component</th>
+                    <th>Status</th>
+                    <th>Top-1 Accuracy</th>
+                    <th>Performance Drop (&Delta;)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {ablations.map((a) => (
+                    <tr key={a.id} style={{ background: a.id === 'A1' ? 'rgba(59, 130, 246, 0.08)' : 'transparent' }}>
+                      <td style={{ fontWeight: 700, color: a.id === 'A1' ? 'var(--accent-color)' : 'inherit' }}>{a.id}</td>
+                      <td>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{a.name || a.id}</div>
+                        {a.description && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem', lineHeight: 1.35 }}>
+                            {a.description}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                        {a.removed_component || 'None'}
+                      </td>
+                      <td>
+                        <span
+                          className={`badge ${a.status === 'EVALUATED' ? 'badge-high' : 'badge-ambiguous'}`}
+                          style={{ fontSize: '0.72rem' }}
+                        >
+                          {a.status || (a.top1_accuracy != null ? 'EVALUATED' : 'NOT_EVALUATED')}
+                        </span>
+                      </td>
+                      <td style={{ fontWeight: 700, color: a.id === 'A1' ? 'var(--badge-supported-color)' : 'var(--text-primary)' }}>
+                        {formatAccuracy(a)}
+                      </td>
+                      <td style={{ fontWeight: 700, color: a.id === 'A1' ? 'var(--text-muted)' : ((a.performance_drop_pp > 0 || a.performance_drop > 0) ? 'var(--error-color)' : 'var(--text-secondary)') }}>
+                        {formatPerformanceDrop(a)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             <div style={{ marginTop: '0.85rem', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.45, fontStyle: 'italic' }}>
               * <strong>Performance Drop (&Delta;)</strong> is measured in percentage points (pp) relative to the Full Model Baseline (A1): 

@@ -130,3 +130,23 @@ class PatientReportRequest(BaseModel):
     namaste_code: Optional[str] = None
     candidate: Optional[Dict[str, Any]] = None
     pipeline_data: Optional[Dict[str, Any]] = None
+
+class UploadReportRequest(BaseModel):
+    raw_bundle: Optional[Dict[str, Any]] = None
+    patient_first_name: Optional[str] = None
+    patient_last_name: Optional[str] = None
+    patient_gender: Optional[str] = "unknown"
+    patient_birth_date: Optional[str] = None
+    patient_id: Optional[str] = None
+    condition_code: Optional[str] = None
+    condition_term: Optional[str] = None
+    icd11_code: Optional[str] = None
+    icd11_title: Optional[str] = None
+    clinical_verification_status: Optional[str] = "unconfirmed"
+    decision_class: Optional[str] = "AUTO_ACCEPTED"
+    confidence_score: Optional[float] = 0.90
+    notes: Optional[str] = None
+
+class UpdateVerificationStatusRequest(BaseModel):
+    status: str = Field(..., description="confirmed | unconfirmed | provisional | refuted")
+    endorsement_note: Optional[str] = None
