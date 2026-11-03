@@ -4,6 +4,7 @@ import { CheckCircle2, XCircle, Edit3, Clock, AlertTriangle, Shield, Lock, Alert
 import { useAuth } from '../context/AuthContext';
 
 import { API_BASE } from '../config/api';
+import VoiceTypingButton from './VoiceTypingButton';
 
 export default function HumanReviewModal({ candidate, sourceTerm, onReviewComplete }) {
   const { user, isAuthenticated, hasRole, openAuthModal } = useAuth();
@@ -164,9 +165,21 @@ export default function HumanReviewModal({ candidate, sourceTerm, onReviewComple
           </div>
         )}
 
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Clinical Audit Notes & Rationale
+          </label>
+          <VoiceTypingButton
+            currentValue={comment}
+            onTextUpdate={(updatedText) => setComment(updatedText)}
+            label="Voice Typing (English)"
+            disabled={!isReviewerOrAdmin}
+          />
+        </div>
+
         <textarea
           rows={3}
-          placeholder={isReviewerOrAdmin ? "Enter clinical audit notes or reason for administrative override..." : "Clinical override restricted to Reviewers and Administrators."}
+          placeholder={isReviewerOrAdmin ? "Enter clinical audit notes or click 'Voice Typing' to dictate in English..." : "Clinical override restricted to Reviewers and Administrators."}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           disabled={!isReviewerOrAdmin}

@@ -38,6 +38,7 @@ import { generateAndDownloadPatientReportPdf } from './utils/pdfReportGenerator'
 import './index.css';
 
 import { API_BASE } from './config/api';
+import VoiceTypingButton from './components/VoiceTypingButton';
 
 // Page definitions with Role-Based Access Control (RBAC)
 const ALL_PAGES = [
@@ -574,14 +575,24 @@ export default function App() {
       {/* PAGE 1: Clinical Search & Live Pipeline */}
       {isTabPermitted && activeTab === 'search' && (
         <div>
-          {/* Search Bar */}
+          {/* Search Bar with Accurate Voice Typing */}
           <form onSubmit={runMappingPipeline} className="search-box-container">
-            <input
-              type="text"
-              placeholder="Search NAMASTE Ayurveda term or code (e.g., Jwara, Kasa, vAtavyAdhiH)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="Search NAMASTE Ayurveda term or code (e.g., Jwara, Kasa, vAtavyAdhiH)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ paddingRight: '2.8rem' }}
+              />
+              <div style={{ position: 'absolute', right: '0.65rem' }}>
+                <VoiceTypingButton
+                  currentValue={searchQuery}
+                  onTextUpdate={(updatedText) => setSearchQuery(updatedText)}
+                  compact
+                />
+              </div>
+            </div>
             <button type="submit" className="primary-btn" disabled={pipelineLoading}>
               <BrainCircuit size={18} /> {pipelineLoading ? 'Reasoning...' : 'Run Pipeline'}
             </button>

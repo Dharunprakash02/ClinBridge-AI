@@ -29,6 +29,7 @@ import { useAuth } from '../context/AuthContext';
 import { generateAndDownloadPatientReportPdf } from '../utils/pdfReportGenerator';
 
 import { API_BASE } from '../config/api';
+import VoiceTypingButton from './VoiceTypingButton';
 
 export default function MedicalReportsHistory({ onViewReportModal }) {
   const { user, hasRole } = useAuth();
@@ -461,7 +462,7 @@ export default function MedicalReportsHistory({ onViewReportModal }) {
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
                 width: '100%',
-                padding: '0.55rem 0.85rem 0.55rem 2.4rem',
+                padding: '0.55rem 2.8rem 0.55rem 2.4rem',
                 borderRadius: '8px',
                 border: '1px solid var(--input-border)',
                 background: 'var(--input-bg)',
@@ -470,6 +471,13 @@ export default function MedicalReportsHistory({ onViewReportModal }) {
                 boxSizing: 'border-box'
               }}
             />
+            <div style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)' }}>
+              <VoiceTypingButton
+                currentValue={searchTerm}
+                onTextUpdate={(updatedText) => setSearchTerm(updatedText)}
+                compact
+              />
+            </div>
           </div>
           <button type="submit" className="theme-toggle-btn" style={{ padding: '0.55rem 1rem', fontSize: '0.82rem' }}>
             Search

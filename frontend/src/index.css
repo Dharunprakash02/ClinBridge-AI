@@ -961,3 +961,25 @@ pre.json-viewer {
 
 
 
+
+/* ==========================================================================
+   Voice Typing & Audio Dictation Animations
+   ========================================================================== */
+@keyframes voice-typing-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    transform: scale(1.04);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    transform: scale(1);
+  }
+}
+
+.voice-typing-pulse {
+  animation: voice-typing-glow 1.4s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
